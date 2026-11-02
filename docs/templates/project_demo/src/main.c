@@ -34,12 +34,10 @@
  *       2) sacpTmplSensorInit() —— 注册属性组（依赖驱动已初始化）
  *       3) 任务创建              —— 周期采样与上报
  */
-static int appStartup(void)
-{
+static int appStartup(void) {
     int ret = boardInit();
 
-    if (ret < 0)
-    {
+    if (ret < 0) {
         return ret;
     }
 
@@ -50,12 +48,10 @@ static int appStartup(void)
     return RET_SUCCESS;
 }
 
-int main(void)
-{
+int main(void) {
     int ret = appStartup();
 
-    if (ret != RET_SUCCESS)
-    {
+    if (ret != RET_SUCCESS) {
         return 1;
     }
 
@@ -63,8 +59,7 @@ int main(void)
      *   - 周期任务：sacpTmplSensorUpdate(SENSOR_PRESSURE) → sacpTmplSensorReport(...)
      *   - 禁止在任务内忙等；所有等待必须带超时
      */
-    for (;;)
-    {
+    for (;;) {
         /* 占位：不得在此写业务逻辑 */
     }
 }

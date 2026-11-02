@@ -12,9 +12,9 @@
  */
 
 /// 传感器模块上报组基址
-#define _TMPL_SENSOR_GROUP                  0
+#define _TMPL_SENSOR_GROUP 0
 
 /// 组内编号：状态同步上报
-#define _STATE_SYNC                         0
+#define _STATE_SYNC 0
 
 #endif // __SACP_LOCAL_GROUPS_H__

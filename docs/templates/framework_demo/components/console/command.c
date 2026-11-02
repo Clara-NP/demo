@@ -25,46 +25,37 @@
 static command_t s_commands[CMD_MAX_NUM];
 static int s_count = 0;
 
-int commandRegister(const char *name, const char *brief, const char *usage, cmdHandler_t handler)
-{
-    if ((name == NULL) || (handler == NULL))
-    {
+int commandRegister(const char *name, const char *brief, const char *usage, cmdHandler_t handler) {
+    if ((name == NULL) || (handler == NULL)) {
         return RET_INVALID_ARGS;
     }
 
-    for (int i = 0; i < s_count; i ++)
-    {
-        if (strcmp(s_commands[i].name, name) == 0)
-        {
-            return RET_INVALID_ARGS;    // 重名
+    for (int i = 0; i < s_count; i++) {
+        if (strcmp(s_commands[i].name, name) == 0) {
+            return RET_INVALID_ARGS; // 重名
         }
     }
 
-    if (s_count >= CMD_MAX_NUM)
-    {
-        return RET_INVALID_ARGS;        // 容量满
+    if (s_count >= CMD_MAX_NUM) {
+        return RET_INVALID_ARGS; // 容量满
     }
 
-    s_commands[s_count].name    = name;
-    s_commands[s_count].brief   = brief;
-    s_commands[s_count].usage   = usage;
+    s_commands[s_count].name = name;
+    s_commands[s_count].brief = brief;
+    s_commands[s_count].usage = usage;
     s_commands[s_count].handler = handler;
-    s_count ++;
+    s_count++;
 
     return RET_SUCCESS;
 }
 
-int commandExec(const char *name, int argc, const char *const *argv)
-{
-    if (name == NULL)
-    {
+int commandExec(const char *name, int argc, const char *const *argv) {
+    if (name == NULL) {
         return RET_INVALID_ARGS;
     }
 
-    for (int i = 0; i < s_count; i ++)
-    {
-        if (strcmp(s_commands[i].name, name) == 0)
-        {
+    for (int i = 0; i < s_count; i++) {
+        if (strcmp(s_commands[i].name, name) == 0) {
             return s_commands[i].handler(argc, argv);
         }
     }
@@ -72,82 +63,68 @@ int commandExec(const char *name, int argc, const char *const *argv)
     return RET_NO_OBJECT;
 }
 
-int commandExecLine(const char *line)
-{
+int commandExecLine(const char *line) {
     const char *args[8];
     char buf[128];
     int argc = 0;
     size_t len;
     char *p;
 
-    if (line == NULL)
-    {
+    if (line == NULL) {
         return RET_INVALID_ARGS;
     }
 
     len = strlen(line);
-    if ((len == 0u) || (len >= sizeof(buf)))
-    {
+    if ((len == 0u) || (len >= sizeof(buf))) {
         return RET_INVALID_ARGS;
     }
 
     (void)memcpy(buf, line, len + 1u);
 
     p = buf;
-    while ((*p != '\0') && (argc < (int)ARRAY_SIZE(args)))
-    {
-        while ((*p == ' ') || (*p == '\t'))
-        {
-            p ++;
+    while ((*p != '\0') && (argc < (int)ARRAY_SIZE(args))) {
+        while ((*p == ' ') || (*p == '\t')) {
+            p++;
         }
-        if (*p == '\0')
-        {
+        if (*p == '\0') {
             break;
         }
 
         args[argc] = p;
-        argc ++;
+        argc++;
 
-        while ((*p != '\0') && (*p != ' ') && (*p != '\t'))
-        {
-            p ++;
+        while ((*p != '\0') && (*p != ' ') && (*p != '\t')) {
+            p++;
         }
-        if (*p != '\0')
-        {
+        if (*p != '\0') {
             *p = '\0';
-            p ++;
+            p++;
         }
     }
 
-    if (argc == 0)
-    {
+    if (argc == 0) {
         return RET_INVALID_ARGS;
     }
 
     return commandExec(args[0], argc - 1, &args[1]);
 }
 
-int commandCount(void)
-{
+int commandCount(void) {
     return s_count;
 }
 
-const command_t *commandAt(int index)
-{
-    if ((index < 0) || (index >= s_count))
-    {
+const command_t *commandAt(int index) {
+    if ((index < 0) || (index >= s_count)) {
         return NULL;
     }
 
     return &s_commands[index];
 }
 
-void rawPrint(const char *fmt, ...)
-{
+void rawPrint(const char *fmt, ...) {
     va_list ap;
 
-    if (fmt == NULL)
-    {
+    if (fmt == NULL) {
         return;
     }
 

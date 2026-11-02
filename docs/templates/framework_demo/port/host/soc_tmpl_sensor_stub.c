@@ -24,8 +24,8 @@
 // #include "soc_tmpl_sensor_private.h"
 
 #define TRACE_ENABLE
-#define TRACE_TAG       "soc-tmplsensor"
-#define TRACE_LEVEL     T_INFO
+#define TRACE_TAG   "soc-tmplsensor"
+#define TRACE_LEVEL T_INFO
 #include <common/trace.h>
 
 /* ==========================================================================
@@ -45,8 +45,7 @@
  * @param mode 模式
  * @return int 0 成功，其它失败
  */
-int socTmplSensorSetMode(uint8_t port, uint8_t mode)
-{
+int socTmplSensorSetMode(uint8_t port, uint8_t mode) {
 #if defined(SOC_FAMILY_A)
     /* 平台 A 实现：通过 SDK 配置 */
     // vendor_periph_config(port, mode);
@@ -72,10 +71,8 @@ int socTmplSensorSetMode(uint8_t port, uint8_t mode)
  * @param raw  输出原始值
  * @return int 0 成功，其它失败
  */
-int socTmplSensorReadRaw(uint8_t port, uint32_t *raw)
-{
-    if (raw == NULL)
-    {
+int socTmplSensorReadRaw(uint8_t port, uint32_t *raw) {
+    if (raw == NULL) {
         return -1;
     }
 
@@ -90,8 +87,7 @@ int socTmplSensorReadRaw(uint8_t port, uint32_t *raw)
 /**
  * @brief 获取该端口的时钟频率（供上层做换算，避免在驱动里写死）
  */
-uint32_t socTmplSensorGetClockHz(uint8_t port)
-{
+uint32_t socTmplSensorGetClockHz(uint8_t port) {
     (void)port;
 
     return 0;

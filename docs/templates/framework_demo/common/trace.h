@@ -29,20 +29,20 @@
 #include <stdio.h>
 
 /// 错误级
-#define T_ERROR                 0
+#define T_ERROR 0
 /// 警告级
-#define T_WARN                  1
+#define T_WARN  1
 /// 信息级
-#define T_INFO                  2
+#define T_INFO  2
 /// 调试级
-#define T_DEBUG                 3
+#define T_DEBUG 3
 
 #ifndef TRACE_LEVEL
-#define TRACE_LEVEL             T_WARN
+#define TRACE_LEVEL T_WARN
 #endif
 
 #ifndef TRACE_TAG
-#define TRACE_TAG               "?"
+#define TRACE_TAG "?"
 #endif
 
 /**
@@ -54,9 +54,8 @@
  *
  * @note host 实现；目标板应替换为串口/环形缓冲后端，接口保持不变
  */
-static inline void tracePrint(int level, const char *tag, const char *fmt, ...)
-{
-    static const char kLevel[] = { 'E', 'W', 'I', 'D' };
+static inline void tracePrint(int level, const char *tag, const char *fmt, ...) {
+    static const char kLevel[] = {'E', 'W', 'I', 'D'};
     char mark = ((level >= T_ERROR) && (level <= T_DEBUG)) ? kLevel[level] : '?';
 
     va_list ap;
@@ -71,27 +70,27 @@ static inline void tracePrint(int level, const char *tag, const char *fmt, ...)
 }
 
 #if defined(TRACE_ENABLE) && (TRACE_LEVEL >= T_ERROR)
-#define elog(...)               tracePrint(T_ERROR, TRACE_TAG, __VA_ARGS__)
+#define elog(...) tracePrint(T_ERROR, TRACE_TAG, __VA_ARGS__)
 #else
-#define elog(...)               ((void)0)
+#define elog(...) ((void)0)
 #endif
 
 #if defined(TRACE_ENABLE) && (TRACE_LEVEL >= T_WARN)
-#define wlog(...)               tracePrint(T_WARN, TRACE_TAG, __VA_ARGS__)
+#define wlog(...) tracePrint(T_WARN, TRACE_TAG, __VA_ARGS__)
 #else
-#define wlog(...)               ((void)0)
+#define wlog(...) ((void)0)
 #endif
 
 #if defined(TRACE_ENABLE) && (TRACE_LEVEL >= T_INFO)
-#define ilog(...)               tracePrint(T_INFO, TRACE_TAG, __VA_ARGS__)
+#define ilog(...) tracePrint(T_INFO, TRACE_TAG, __VA_ARGS__)
 #else
-#define ilog(...)               ((void)0)
+#define ilog(...) ((void)0)
 #endif
 
 #if defined(TRACE_ENABLE) && (TRACE_LEVEL >= T_DEBUG)
-#define dlog(...)               tracePrint(T_DEBUG, TRACE_TAG, __VA_ARGS__)
+#define dlog(...) tracePrint(T_DEBUG, TRACE_TAG, __VA_ARGS__)
 #else
-#define dlog(...)               ((void)0)
+#define dlog(...) ((void)0)
 #endif
 
 #endif // __COMMON_TRACE_H__

@@ -71,7 +71,7 @@
 
 - `[待建]` `cmake --preset host && ctest --preset host` 全绿（依赖 `env/presets/base.json`）
 - `[待建]` `cmake --preset <board> && cmake --build --preset <board>` 无警告（依赖工程 preset）
-- `[待建]` `clang-format --dry-run --Werror` 通过（依赖 `.clang-format`）
+- `clang-format --dry-run --Werror` 通过（`.clang-format` + `clang-format` 工具 ✅ 就绪，模板代码已格式化）
 - 新模块：契约注释 + host 单测 + 在方案文档中可追溯
 - 未实际验证的内容不得写成“已完成”（无论基础设施是否就绪，此条始终强制）
 
@@ -83,12 +83,15 @@
 | `commit-msg` 校验 | `.githooks/commit-msg` | 转为强制 |
 | host preset 测试 | `env/presets/base.json` | 转为强制 |
 | 板上构建 | 工程 `CMakePresets.json` | 转为强制 |
-| 格式检查 | `.clang-format` | 转为强制 |
+| 格式检查 | ✅ `.clang-format` + `clang-format` 均就绪 | **已强制**：改 C 代码后必跑 |
+| 环境自检 | ✅ `tools/check_env.py`、`tools/bootstrap.sh` | **已就绪**：新环境先跑它 |
 
 **判断方法**：命令或文件不存在 → 视为“未就绪”，在任务结束时明确写出“该项因基础设施未建而跳过”，不得省略不提。
 
 ## 8. 文档索引
 
+- **环境自检**：`python3 tools/check_env.py`（工具链/配置/目录三态报告），新环境先跑 `./tools/bootstrap.sh`
+- **写 C 代码前先读**：`.github/instructions/c-embedded.instructions.md`（Doxygen 契约 / 花括号 / 第三方只读 / 分层）
 - **新增/修改模块（先读这个）**：`docs/guides/module-development.md`（流程）+ `docs/guides/module-design.md`（契约）；流程化执行用 skill `add-module`；代码样板见 `docs/templates/framework_demo/drivers/devices/tmpl_sensor/`
 - **模板落地示例（工程层与框架层怎么分）**：`docs/templates/project_demo/`（工程骨架，复制用）+ 模块实体在 `framework/drivers/devices/`、平台实现在 `framework/port/`
 - **框架层骨架**：`docs/templates/framework_demo/`（common/osal/drivers/components 的最小实现，由 `docs/templates/CMakeLists.txt` 冒烟编译）

@@ -1,0 +1,49 @@
+# =============================================================================
+# C 代码格式约定（clang-format）
+# -----------------------------------------------------------------------------
+# 只约束"能被机械改写"的部分：缩进、空格、花括号位置、行宽、指针对齐。
+# 不碰语义：注释排版与 include 顺序保持原样（ReflowComments / SortIncludes = false）。
+#
+# 关键风格（对应团队约定）：
+#   - if / for / while / struct / enum / 函数 的花括号都**不换行**（Attach）
+#   - 缩进 4 空格，不用 Tab，行宽 100
+#   - 指针靠变量名：int32_t *p
+#
+# 使用范围：只对自有代码运行，**不包含** framework/third_party/** 与 **/generated/**。
+#   clang-format --dry-run --Werror $(git ls-files \
+#       'framework/common/**' 'framework/osal/**' 'framework/drivers/**' \
+#       'framework/components/**' 'framework/port/**' 'projects/**' | grep -E '\.(c|h)$')
+#
+# 单文件临时豁免（自动生成代码）在文件首行写：// clang-format off
+# =============================================================================
+
+BasedOnStyle: LLVM
+
+# 缩进与行宽
+IndentWidth: 4
+TabWidth: 4
+UseTab: Never
+ColumnLimit: 100
+MaxEmptyLinesToKeep: 1
+KeepEmptyLinesAtTheStartOfBlocks: false
+
+# 花括号：全部 Attach（不换行）
+BreakBeforeBraces: Attach
+AllowShortIfStatementsOnASingleLine: false
+AllowShortLoopsOnASingleLine: false
+AllowShortFunctionsOnASingleLine: Empty
+AllowShortCaseLabelsOnASingleLine: false
+InsertBraces: false          # 不自动补大括号，避免改变控制流可读性
+
+# 空格与对齐
+SpaceBeforeParens: ControlStatements
+SpaceAfterCStyleCast: false  # (uint8_t)value
+PointerAlignment: Right      # int32_t *p
+AlignAfterOpenBracket: Align
+AlignConsecutiveMacros: AcrossComments   # #define 数值按列对齐（跨注释行生效）
+AlignTrailingComments: false
+IndentCaseLabels: true
+
+# 不改变语义顺序
+ReflowComments: false
+SortIncludes: false

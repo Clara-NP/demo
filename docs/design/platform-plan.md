@@ -49,7 +49,6 @@
 900-test/                              # 工作区根
 ├── AGENTS.md                          # ★ 全局约束（常驻，≤120 行）
 ├── README.md                          # 环境入口：装什么、怎么加工程
-├── bootstrap.sh                       # ★ 新电脑一键就绪：检查工具链、生成目录
 ├── .githooks/commit-msg               # 提交信息校验（见 §1.8）
 ├── .github/
 │   ├── instructions/
@@ -84,6 +83,8 @@
 │   ├── presets/base.json           # 预设模板，工程继承后只写差异
 │   └── toolchains/                 # arm-none-eabi.cmake / esp32.cmake
 ├── tools/
+│   ├── bootstrap.sh                # ★ 新环境就绪：自检 + 可选安装（入口）
+│   ├── check_env.py                # 环境自检（工具链 / 配置 / 目录三态）
 │   ├── check_layers.py             # 架构守护：禁止业务层引用芯片头
 │   ├── gen_board_config.py         # board.yaml -> board_config.h
 │   └── run_host_tests.sh
@@ -315,14 +316,14 @@ deps:
 | 方式 | 做法 | 适用 |
 |---|---|---|
 | **A. 单仓 + 忽略工程**（推荐） | 一个 git 仓库；`.gitignore` 忽略 `projects/*`；环境与工程同机不同步 | 个人、工程不外传 |
-| **B. 模板仓 + 独立工程仓** | 环境仓库设为 GitHub Template；每个工程独立仓，clone 后 `bootstrap.sh` 就绪 | 工程需独立交付/版本 |
+| **B. 模板仓 + 独立工程仓** | 环境仓库设为 GitHub Template；每个工程独立仓，clone 后 `tools/bootstrap.sh` 就绪 | 工程需独立交付/版本 |
 | **C. 环境作 submodule** | 工程仓把环境仓作为 submodule | 团队需锁定环境版本 |
 
 **换电脑的 4 步**（方式 A/B 通用）
 
 ```bash
 git clone <env-repo> && cd 900-test
-./bootstrap.sh              # 检查/安装工具链、生成 projects/ 与 .gitignore
+./tools/bootstrap.sh       # 检查/安装工具链（不生成目录、不改仓库）
 # 新建工程：让 AI 走 new-project skill
 # 恢复已有工程：把工程目录拷回 projects/ 即可
 ```
@@ -368,7 +369,7 @@ git check-ignore projects/001-demo && echo "工程未入库，符合预期"
 
 | 文件 | 作用 |
 |---|---|
-| `getting-started.md` | 新电脑：clone → `bootstrap.sh` → 验证工具链 → 跑通 hello |
+| `getting-started.md` | 新电脑：clone → `tools/bootstrap.sh` → 验证工具链 → 跑通 hello |
 | `add-project.md` | 新增工程 5 步 + 常见错误 |
 | `upgrade-env.md` | 环境层升级时如何迁到已有工程 |
 | `faq.md` | “配了不生效”“工程间如何引用”等高频问题 |

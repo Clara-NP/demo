@@ -20,13 +20,11 @@
 #include <common/generic.h>
 #include <osal/osal.h>
 
-uint32_t osTickMs(void)
-{
+uint32_t osTickMs(void) {
     struct timespec ts;
     uint64_t ms;
 
-    if (clock_gettime(CLOCK_MONOTONIC, &ts) != 0)
-    {
+    if (clock_gettime(CLOCK_MONOTONIC, &ts) != 0) {
         return 0u;
     }
 
@@ -35,7 +33,6 @@ uint32_t osTickMs(void)
     return (uint32_t)ms;
 }
 
-uint32_t sysTimeStamp(void)
-{
+uint32_t sysTimeStamp(void) {
     return osTickMs();
 }

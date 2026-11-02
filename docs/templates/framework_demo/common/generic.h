@@ -27,7 +27,7 @@
  *
  * @param[in] _a 数组（不允许传指针）
  */
-#define ARRAY_SIZE(_a)              (sizeof(_a) / sizeof((_a)[0]))
+#define ARRAY_SIZE(_a) (sizeof(_a) / sizeof((_a)[0]))
 
 /**
  * @brief 编译期断言（C99 可用；C11 可直接用 _Static_assert）
@@ -35,25 +35,24 @@
  * @param[in] _cond 常量表达式
  * @param[in] _tag  用于生成唯一类型名
  */
-#define COMPILE_TIME_ASSERT(_cond, _tag) \
-    typedef char compile_time_assert_##_tag[(_cond) ? 1 : -1]
+#define COMPILE_TIME_ASSERT(_cond, _tag) typedef char compile_time_assert_##_tag[(_cond) ? 1 : -1]
 
 /// 通用句柄：跨层传递的整数标识，禁止传内部指针
 typedef uint16_t handle_t;
 
 /// 成功
-#define RET_SUCCESS             0
+#define RET_SUCCESS       0
 /// 一般失败
-#define RET_FAILED             -1
+#define RET_FAILED        -1
 /// 实例/对象不存在
-#define RET_NO_OBJECT          -2
+#define RET_NO_OBJECT     -2
 /// 参数非法
-#define RET_INVALID_ARGS       -3
+#define RET_INVALID_ARGS  -3
 /// 当前芯片/型号不支持
-#define RET_NOT_SUPPORT        -4
+#define RET_NOT_SUPPORT   -4
 /// 超时
-#define RET_TIMEOUT            -5
+#define RET_TIMEOUT       -5
 /// 类型不匹配
-#define RET_TYPE_MISMATCH      -6
+#define RET_TYPE_MISMATCH -6
 
 #endif // __COMMON_GENERIC_H__

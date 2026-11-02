@@ -38,15 +38,15 @@
 #include "sacp_tmpl_sensor.h"
 
 #define TRACE_ENABLE
-#define TRACE_TAG       "sacp-tmplsensor"
-#define TRACE_LEVEL     T_INFO
+#define TRACE_TAG   "sacp-tmplsensor"
+#define TRACE_LEVEL T_INFO
 #include <common/trace.h>
 
 #if CONFIG_SACP_TMPL_SENSOR
 
 /// 本组监控的属性 ID 区间
-#define LOCAL_ATTRIBUTE_MIN         200
-#define LOCAL_ATTRIBUTE_MAX         219
+#define LOCAL_ATTRIBUTE_MIN 200
+#define LOCAL_ATTRIBUTE_MAX 219
 
 /// 写回调声明
 static void localAttributeWriteApply(const void *groupData, sacpRequest_t *request);
@@ -55,8 +55,7 @@ static void localAttributeWriteApply(const void *groupData, sacpRequest_t *reque
  * 属性表（32 位族：INT8/16/32、UINT8/16/32、FLOAT 都在这里）
  * ========================================================================== */
 
-LOCAL_V32_TABLE(tmplsensor)
-{
+LOCAL_V32_TABLE(tmplsensor){
     _INT32_ATTRIBUTE(ATTR_TMPL_SENSOR_VALUE),
     _INT16_ATTRIBUTE(ATTR_TMPL_SENSOR_TEMP),
     _UINT8_ATTRIBUTE(ATTR_TMPL_SENSOR_STATUS),
@@ -64,14 +63,10 @@ LOCAL_V32_TABLE(tmplsensor)
 };
 
 /// 没有 64 位属性时也必须保留空表（宏展开需要）
-LOCAL_V64_TABLE(tmplsensor)
-{
-};
+LOCAL_V64_TABLE(tmplsensor){};
 
 /// 没有 OCTET（字符串/二进制）属性时同样保留空表
-LOCAL_OCTET_TABLE(tmplsensor)
-{
-};
+LOCAL_OCTET_TABLE(tmplsensor){};
 
 /// 定义一个属性组（自动生成 s_group）
 LOCAL_GROUP_DEFINE(tmplsensor, LOCAL_ATTRIBUTE_MIN, LOCAL_ATTRIBUTE_MAX, localAttributeWriteApply);
@@ -80,8 +75,7 @@ LOCAL_GROUP_DEFINE(tmplsensor, LOCAL_ATTRIBUTE_MIN, LOCAL_ATTRIBUTE_MAX, localAt
  * 上报组：一次上报的属性集合
  * ========================================================================== */
 
-LOCAL_REPORT_DEFINE(tmplsensorState)
-{
+LOCAL_REPORT_DEFINE(tmplsensorState){
     ATTR_TMPL_SENSOR_VALUE,
     ATTR_TMPL_SENSOR_TEMP,
     ATTR_TMPL_SENSOR_STATUS,
@@ -91,8 +85,7 @@ LOCAL_REPORT_DEFINE(tmplsensorState)
  * 写回调：只处理"可写"属性，读属性不在此处理
  * ========================================================================== */
 
-static void localAttributeWriteApply(const void *groupData, sacpRequest_t *request)
-{
+static void localAttributeWriteApply(const void *groupData, sacpRequest_t *request) {
     const attributeGroup_t *group = (const attributeGroup_t *)groupData;
 
     (void)request;
@@ -100,19 +93,14 @@ static void localAttributeWriteApply(const void *groupData, sacpRequest_t *reque
     // 模式：由上层把写入值下发给驱动
     attributeV32_t *modeAttr = (attributeV32_t *)findAttributeInGroup(group, ATTR_TMPL_SENSOR_MODE);
 
-    if (ATTRIBUTE_TEST_AND_CLEAR_WRITE_PENDING(modeAttr))
-    {
+    if (ATTRIBUTE_TEST_AND_CLEAR_WRITE_PENDING(modeAttr)) {
         // 单实例示例：多实例时按属性 ID 反算逻辑 ID
         uint8_t id = SENSOR_PRESSURE;
         int ret = tmplSensorSetMode(id, (uint8_t)modeAttr->value.v32);
 
-        if (ret != RET_SUCCESS)
-        {
-            wlog("apply mode failed, id:%d mode:%d ret:%d",
-                 id, (int)modeAttr->value.v32, ret);
-        }
-        else
-        {
+        if (ret != RET_SUCCESS) {
+            wlog("apply mode failed, id:%d mode:%d ret:%d", id, (int)modeAttr->value.v32, ret);
+        } else {
             ilog("apply mode ok, id:%d mode:%d", id, (int)modeAttr->value.v32);
         }
     }
@@ -122,30 +110,26 @@ static void localAttributeWriteApply(const void *groupData, sacpRequest_t *reque
  * 数据刷新与上报
  * ========================================================================== */
 
-int sacpTmplSensorUpdate(uint8_t id)
-{
-    tmplSensorData_t data = { 0 };
+int sacpTmplSensorUpdate(uint8_t id) {
+    tmplSensorData_t data = {0};
     int ret = tmplSensorRead(id, &data);
 
-    if (ret != RET_SUCCESS)
-    {
+    if (ret != RET_SUCCESS) {
         localAttributeSetInt(s_group, ATTR_TMPL_SENSOR_STATUS, (uint32_t)ret);
         return ret;
     }
 
-    localAttributeSetInt(s_group, ATTR_TMPL_SENSOR_VALUE,  (uint32_t)data.value);
-    localAttributeSetInt(s_group, ATTR_TMPL_SENSOR_TEMP,   (uint32_t)(uint16_t)data.temperature);
+    localAttributeSetInt(s_group, ATTR_TMPL_SENSOR_VALUE, (uint32_t)data.value);
+    localAttributeSetInt(s_group, ATTR_TMPL_SENSOR_TEMP, (uint32_t)(uint16_t)data.temperature);
     localAttributeSetInt(s_group, ATTR_TMPL_SENSOR_STATUS, data.status);
 
     return RET_SUCCESS;
 }
 
-void sacpTmplSensorReport(uint8_t groupId)
-{
-    if (groupId == REPORT_ID(_TMPL_SENSOR_GROUP, _STATE_SYNC))
-    {
-        reportAttributesWithTimestamp(groupId, SACP_PRIORITY_LOWEST,
-                                      sysTimeStamp(), LOCAL_REPORT(tmplsensorState));
+void sacpTmplSensorReport(uint8_t groupId) {
+    if (groupId == REPORT_ID(_TMPL_SENSOR_GROUP, _STATE_SYNC)) {
+        reportAttributesWithTimestamp(groupId, SACP_PRIORITY_LOWEST, sysTimeStamp(),
+                                      LOCAL_REPORT(tmplsensorState));
     }
 }
 
@@ -153,10 +137,8 @@ void sacpTmplSensorReport(uint8_t groupId)
  * 初始化：注册属性组（必须在 SACP 服务初始化之后调用）
  * ========================================================================== */
 
-void sacpTmplSensorInit(void)
-{
-    if (attributeGroupRegister(s_group) != RET_SUCCESS)
-    {
+void sacpTmplSensorInit(void) {
+    if (attributeGroupRegister(s_group) != RET_SUCCESS) {
         elog("register tmplsensor attribute group failed");
         return;
     }

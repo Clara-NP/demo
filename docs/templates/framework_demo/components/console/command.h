@@ -21,7 +21,7 @@
 #include <common/generic.h>
 
 /// 命令表容量（超出时注册失败并返回 RET_INVALID_ARGS）
-#define CMD_MAX_NUM                 16
+#define CMD_MAX_NUM 16
 
 /**
  * @brief 命令处理函数
@@ -35,8 +35,7 @@ typedef int (*cmdHandler_t)(int argc, const char *const *argv);
 /**
  * @brief 一条命令的注册项
  */
-typedef struct
-{
+typedef struct {
     const char *name;
     const char *brief;
     const char *usage;
@@ -106,12 +105,11 @@ void rawPrint(const char *fmt, ...);
  * @note host 用 `__attribute__((constructor))` 自动注册；
  *       MCU 目标应改为 linker section 自动注册，接口保持不变
  */
-#define CMD_DEFINE(_name, _brief, _usage)                                           \
-    static int cmd_##_name##_handler(int argc, const char *const *argv);            \
-    static void __attribute__((constructor)) cmd_##_name##_register(void)           \
-    {                                                                               \
-        (void)commandRegister(#_name, (_brief), (_usage), cmd_##_name##_handler);   \
-    }                                                                               \
+#define CMD_DEFINE(_name, _brief, _usage)                                                          \
+    static int cmd_##_name##_handler(int argc, const char *const *argv);                           \
+    static void __attribute__((constructor)) cmd_##_name##_register(void) {                        \
+        (void)commandRegister(#_name, (_brief), (_usage), cmd_##_name##_handler);                  \
+    }                                                                                              \
     static int cmd_##_name##_handler(int argc, const char *const *argv)
 
 #else

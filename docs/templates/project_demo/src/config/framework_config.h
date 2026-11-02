@@ -21,10 +21,10 @@
 #include <sacp/local_config.h>
 
 /// 传感器实例容量：跟随逻辑 ID 枚举，增删资源无需改动此处
-#define CONFIG_TMPL_SENSOR_MAX_NUM          EXPORT_TMPL_SENSOR_MAX_NUM
+#define CONFIG_TMPL_SENSOR_MAX_NUM EXPORT_TMPL_SENSOR_MAX_NUM
 
 /// 抽象 I2C 总线数量
-#define CONFIG_I2C_MAX_NUM                  EXPORT_I2C_MAX_NUM
+#define CONFIG_I2C_MAX_NUM EXPORT_I2C_MAX_NUM
 
 /*
  * 板级差异（引脚 / 器件地址 / 参数）不在此文件，统一下沉到 src/system/board.c。

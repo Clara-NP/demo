@@ -22,8 +22,7 @@
  *
  * @note 物理总线号由 `port/<soc>/` 的总线驱动决定，应用层只认逻辑 ID
  */
-enum EXPORT_I2C
-{
+enum EXPORT_I2C {
     I2C_BUS_0 = 0,
 
     EXPORT_I2C_MAX_NUM
@@ -34,8 +33,7 @@ enum EXPORT_I2C
  *
  * @note 增删资源只改这里：描述符表与容量宏均由本枚举派生
  */
-enum EXPORT_TMPL_SENSOR
-{
+enum EXPORT_TMPL_SENSOR {
     /// 压力传感器
     SENSOR_PRESSURE = 0,
     /// 温度传感器

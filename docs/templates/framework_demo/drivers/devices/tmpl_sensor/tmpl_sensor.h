@@ -29,7 +29,7 @@
  * @note 产品配置应写成： #define CONFIG_TMPL_SENSOR_MAX_NUM EXPORT_TMPL_SENSOR_MAX_NUM
  */
 #ifndef CONFIG_TMPL_SENSOR_MAX_NUM
-#define CONFIG_TMPL_SENSOR_MAX_NUM      2
+#define CONFIG_TMPL_SENSOR_MAX_NUM 2
 #endif
 
 /**
@@ -37,8 +37,7 @@
  *
  * @details 新增型号时只在此枚举与 xxx.c 的 switch 中增加分支，公共 API 不变
  */
-enum TMPL_SENSOR_CHIP
-{
+enum TMPL_SENSOR_CHIP {
     /// 型号 A：单次转换，量程由 chipParameter 给出
     TMPL_SENSOR_CHIP_A = 0,
     /// 型号 B：支持周期转换
@@ -52,8 +51,7 @@ enum TMPL_SENSOR_CHIP
 /**
  * @brief 采样模式
  */
-enum TMPL_SENSOR_MODE
-{
+enum TMPL_SENSOR_MODE {
     /// 单次采样
     TMPL_SENSOR_MODE_SINGLE = 0,
     /// 周期采样：100ms
@@ -64,11 +62,11 @@ enum TMPL_SENSOR_MODE
 };
 
 /// 数值反向（低有效 / 反向换算）
-#define TMPL_SENSOR_FLAG_INVERT         0x0001
+#define TMPL_SENSOR_FLAG_INVERT       0x0001
 /// 采样值需要除以 10（定点换算）
-#define TMPL_SENSOR_FLAG_SCALE_0_1      0x0002
+#define TMPL_SENSOR_FLAG_SCALE_0_1    0x0002
 /// 保留给应用层使用的自定义标志
-#define TMPL_SENSOR_FLAG_USER_DEFINE0   0x8000
+#define TMPL_SENSOR_FLAG_USER_DEFINE0 0x8000
 
 /**
  * @brief 传感器硬件配置（描述符）
@@ -76,18 +74,17 @@ enum TMPL_SENSOR_MODE
  * @details 由板级配置声明为 static const 数组，只读，放在 Flash。
  *          驱动初始化时按 id 与内部实例绑定。
  */
-typedef struct
-{
+typedef struct {
     /// 逻辑 ID，见 config/export_ids.h
-    uint8_t     id;
+    uint8_t id;
     /// 芯片类型，见 ::TMPL_SENSOR_CHIP
-    uint8_t     chip;
+    uint8_t chip;
     /// 抽象总线 ID，见抽象 i2c 驱动中定义的总线枚举
-    uint8_t     bus;
+    uint8_t bus;
     /// 器件地址（7bit）
-    uint16_t    address;
+    uint16_t address;
     /// 行为标志，见 TMPL_SENSOR_FLAG_*
-    uint16_t    flags;
+    uint16_t flags;
     /// 型号私有参数，NULL 表示使用默认值
     /// 约定格式："range:500;scale:10"
     const char *chipParameter;
@@ -96,16 +93,15 @@ typedef struct
 /**
  * @brief 一次采样结果
  */
-typedef struct
-{
+typedef struct {
     /// 原始换算后的测量值
-    int32_t  value;
+    int32_t value;
     /// 温度，单位 0.1 摄氏度
-    int16_t  temperature;
+    int16_t temperature;
     /// 器件状态字，0 表示正常
-    uint8_t  status;
+    uint8_t status;
     /// 采样序号，用于判断是否为陈旧数据
-    uint8_t  sequence;
+    uint8_t sequence;
 } tmplSensorData_t;
 
 /**

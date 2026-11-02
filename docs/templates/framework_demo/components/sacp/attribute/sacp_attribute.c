@@ -20,77 +20,63 @@
 #include "sacp_attribute.h"
 
 /// 最多注册的属性组数量
-#define SACP_GROUP_MAX              8
+#define SACP_GROUP_MAX 8
 
 static attributeGroup_t *s_groups[SACP_GROUP_MAX];
 static int s_groupCount = 0;
 
-static struct
-{
-    uint8_t  valid;
-    uint8_t  groupId;
-    uint8_t  priority;
+static struct {
+    uint8_t valid;
+    uint8_t groupId;
+    uint8_t priority;
     uint16_t attrCount;
     uint32_t timestamp;
 } s_lastReport;
 
-int attributeGroupRegister(attributeGroup_t *group)
-{
-    if ((group == NULL) || (group->v32 == NULL) || (group->v32Num == 0u))
-    {
+int attributeGroupRegister(attributeGroup_t *group) {
+    if ((group == NULL) || (group->v32 == NULL) || (group->v32Num == 0u)) {
         return RET_INVALID_ARGS;
     }
 
-    if (group->minId > group->maxId)
-    {
+    if (group->minId > group->maxId) {
         return RET_INVALID_ARGS;
     }
 
-    for (uint16_t i = 0; i < group->v32Num; i ++)
-    {
+    for (uint16_t i = 0; i < group->v32Num; i++) {
         const attributeV32_t *attr = &group->v32[i];
 
-        if ((attr->id < group->minId) || (attr->id > group->maxId))
-        {
-            return RET_INVALID_ARGS;        // ID 超出本组区间
+        if ((attr->id < group->minId) || (attr->id > group->maxId)) {
+            return RET_INVALID_ARGS; // ID 超出本组区间
         }
 
-        if ((i > 0u) && (attr->id <= group->v32[i - 1u].id))
-        {
-            return RET_INVALID_ARGS;        // 必须严格升序
+        if ((i > 0u) && (attr->id <= group->v32[i - 1u].id)) {
+            return RET_INVALID_ARGS; // 必须严格升序
         }
     }
 
-    for (int i = 0; i < s_groupCount; i ++)
-    {
-        if (s_groups[i] == group)
-        {
-            return RET_INVALID_ARGS;        // 重复注册
+    for (int i = 0; i < s_groupCount; i++) {
+        if (s_groups[i] == group) {
+            return RET_INVALID_ARGS; // 重复注册
         }
     }
 
-    if (s_groupCount >= SACP_GROUP_MAX)
-    {
+    if (s_groupCount >= SACP_GROUP_MAX) {
         return RET_FAILED;
     }
 
     s_groups[s_groupCount] = group;
-    s_groupCount ++;
+    s_groupCount++;
 
     return RET_SUCCESS;
 }
 
-attributeV32_t *findAttributeInGroup(const attributeGroup_t *group, uint16_t id)
-{
-    if ((group == NULL) || (group->v32 == NULL))
-    {
+attributeV32_t *findAttributeInGroup(const attributeGroup_t *group, uint16_t id) {
+    if ((group == NULL) || (group->v32 == NULL)) {
         return NULL;
     }
 
-    for (uint16_t i = 0; i < group->v32Num; i ++)
-    {
-        if (group->v32[i].id == id)
-        {
+    for (uint16_t i = 0; i < group->v32Num; i++) {
+        if (group->v32[i].id == id) {
             return &group->v32[i];
         }
     }
@@ -98,17 +84,14 @@ attributeV32_t *findAttributeInGroup(const attributeGroup_t *group, uint16_t id)
     return NULL;
 }
 
-int localAttributeSetInt(attributeGroup_t *group, uint16_t id, uint32_t value)
-{
+int localAttributeSetInt(attributeGroup_t *group, uint16_t id, uint32_t value) {
     attributeV32_t *attr = findAttributeInGroup(group, id);
 
-    if (attr == NULL)
-    {
+    if (attr == NULL) {
         return RET_NO_OBJECT;
     }
 
-    switch (attr->type)
-    {
+    switch (attr->type) {
         case ATTR_TYPE_INT8:
             attr->value.v8 = (int8_t)value;
             break;
@@ -144,15 +127,12 @@ int localAttributeSetInt(attributeGroup_t *group, uint16_t id, uint32_t value)
     return RET_SUCCESS;
 }
 
-int attributeTestAndClearWritePending(attributeV32_t *attr)
-{
-    if (attr == NULL)
-    {
+int attributeTestAndClearWritePending(attributeV32_t *attr) {
+    if (attr == NULL) {
         return 0;
     }
 
-    if ((attr->flags & ATTR_FLAG_WRITE_PENDING) == 0u)
-    {
+    if ((attr->flags & ATTR_FLAG_WRITE_PENDING) == 0u) {
         return 0;
     }
 
@@ -162,74 +142,61 @@ int attributeTestAndClearWritePending(attributeV32_t *attr)
 }
 
 int reportAttributesWithTimestamp(uint8_t groupId, uint8_t priority, uint32_t timestamp,
-                                  const uint16_t *ids, uint16_t num)
-{
+                                  const uint16_t *ids, uint16_t num) {
     attributeGroup_t *group = NULL;
 
-    if ((ids == NULL) || (num == 0u))
-    {
+    if ((ids == NULL) || (num == 0u)) {
         return RET_INVALID_ARGS;
     }
 
-    for (int i = 0; i < s_groupCount; i ++)
-    {
+    for (int i = 0; i < s_groupCount; i++) {
         const attributeGroup_t *candidate = s_groups[i];
 
-        if (num == 0u)
-        {
+        if (num == 0u) {
             continue;
         }
 
-        if ((ids[0] >= candidate->minId) && (ids[0] <= candidate->maxId))
-        {
+        if ((ids[0] >= candidate->minId) && (ids[0] <= candidate->maxId)) {
             group = s_groups[i];
             break;
         }
     }
 
-    if (group == NULL)
-    {
-        return RET_NOT_SUPPORT;             // 属性不在任何已注册组内
+    if (group == NULL) {
+        return RET_NOT_SUPPORT; // 属性不在任何已注册组内
     }
 
-    for (uint16_t i = 0; i < num; i ++)
-    {
-        if (findAttributeInGroup(group, ids[i]) == NULL)
-        {
+    for (uint16_t i = 0; i < num; i++) {
+        if (findAttributeInGroup(group, ids[i]) == NULL) {
             return RET_NOT_SUPPORT;
         }
     }
 
-    s_lastReport.valid     = 1u;
-    s_lastReport.groupId   = groupId;
-    s_lastReport.priority  = priority;
+    s_lastReport.valid = 1u;
+    s_lastReport.groupId = groupId;
+    s_lastReport.priority = priority;
     s_lastReport.attrCount = num;
     s_lastReport.timestamp = timestamp;
 
     return RET_SUCCESS;
 }
 
-int sacpLastReport(uint8_t *groupId, uint16_t *attrCount)
-{
-    if (s_lastReport.valid == 0u)
-    {
+int sacpLastReport(uint8_t *groupId, uint16_t *attrCount) {
+    if (s_lastReport.valid == 0u) {
         return RET_NO_OBJECT;
     }
 
-    if (groupId != NULL)
-    {
+    if (groupId != NULL) {
         *groupId = s_lastReport.groupId;
     }
 
-    if (attrCount != NULL)
-    {
+    if (attrCount != NULL) {
         *attrCount = s_lastReport.attrCount;
     }
 
     return RET_SUCCESS;
 }
 
-int sacpGroupCount(void)
-{
+int sacpGroupCount(void) {
     return s_groupCount;
 }

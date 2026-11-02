@@ -23,14 +23,13 @@
 #include "i2c_host.h"
 
 /// 支持的总线数（与 export_ids.h 的 EXPORT_I2C 对齐）
-#define I2C_HOST_BUS_MAX            4
+#define I2C_HOST_BUS_MAX  4
 /// 7bit 地址空间
-#define I2C_HOST_ADDR_MAX           128
+#define I2C_HOST_ADDR_MAX 128
 /// 每个器件的寄存器数
-#define I2C_HOST_REG_MAX            256
+#define I2C_HOST_REG_MAX  256
 
-typedef struct
-{
+typedef struct {
     uint8_t present;
     uint8_t regs[I2C_HOST_REG_MAX];
 } i2cHostDev_t;
@@ -38,30 +37,24 @@ typedef struct
 static i2cHostDev_t s_dev[I2C_HOST_BUS_MAX][I2C_HOST_ADDR_MAX];
 static int s_err[I2C_HOST_BUS_MAX];
 
-static int busValid(uint8_t bus)
-{
+static int busValid(uint8_t bus) {
     return (bus < I2C_HOST_BUS_MAX) ? 1 : 0;
 }
 
-static i2cHostDev_t *devFrom(uint8_t bus, uint16_t addr)
-{
-    if ((busValid(bus) == 0) || (addr >= I2C_HOST_ADDR_MAX))
-    {
+static i2cHostDev_t *devFrom(uint8_t bus, uint16_t addr) {
+    if ((busValid(bus) == 0) || (addr >= I2C_HOST_ADDR_MAX)) {
         return NULL;
     }
 
-    if (s_dev[bus][addr].present == 0u)
-    {
+    if (s_dev[bus][addr].present == 0u) {
         return NULL;
     }
 
     return &s_dev[bus][addr];
 }
 
-int i2cHostAttach(uint8_t bus, uint16_t addr)
-{
-    if ((busValid(bus) == 0) || (addr >= I2C_HOST_ADDR_MAX))
-    {
+int i2cHostAttach(uint8_t bus, uint16_t addr) {
+    if ((busValid(bus) == 0) || (addr >= I2C_HOST_ADDR_MAX)) {
         return RET_INVALID_ARGS;
     }
 
@@ -71,17 +64,14 @@ int i2cHostAttach(uint8_t bus, uint16_t addr)
     return RET_SUCCESS;
 }
 
-int i2cHostSetRegs(uint8_t bus, uint16_t addr, uint8_t reg, const uint8_t *buf, uint16_t len)
-{
+int i2cHostSetRegs(uint8_t bus, uint16_t addr, uint8_t reg, const uint8_t *buf, uint16_t len) {
     i2cHostDev_t *dev = devFrom(bus, addr);
 
-    if ((dev == NULL) || (buf == NULL) || (len == 0u))
-    {
+    if ((dev == NULL) || (buf == NULL) || (len == 0u)) {
         return RET_NO_OBJECT;
     }
 
-    if (((uint32_t)reg + (uint32_t)len) > (uint32_t)I2C_HOST_REG_MAX)
-    {
+    if (((uint32_t)reg + (uint32_t)len) > (uint32_t)I2C_HOST_REG_MAX) {
         return RET_INVALID_ARGS;
     }
 
@@ -90,10 +80,8 @@ int i2cHostSetRegs(uint8_t bus, uint16_t addr, uint8_t reg, const uint8_t *buf, 
     return RET_SUCCESS;
 }
 
-int i2cHostSetError(uint8_t bus, int err)
-{
-    if (busValid(bus) == 0)
-    {
+int i2cHostSetError(uint8_t bus, int err) {
+    if (busValid(bus) == 0) {
         return RET_INVALID_ARGS;
     }
 
@@ -102,22 +90,18 @@ int i2cHostSetError(uint8_t bus, int err)
     return RET_SUCCESS;
 }
 
-int i2cWriteRegs(uint8_t bus, uint16_t addr, uint8_t reg, const uint8_t *buf, uint16_t len)
-{
+int i2cWriteRegs(uint8_t bus, uint16_t addr, uint8_t reg, const uint8_t *buf, uint16_t len) {
     i2cHostDev_t *dev = devFrom(bus, addr);
 
-    if ((dev == NULL) || (buf == NULL) || (len == 0u))
-    {
+    if ((dev == NULL) || (buf == NULL) || (len == 0u)) {
         return RET_INVALID_ARGS;
     }
 
-    if (s_err[bus] != 0)
-    {
-        return RET_NO_OBJECT;               // 模拟器件无应答
+    if (s_err[bus] != 0) {
+        return RET_NO_OBJECT; // 模拟器件无应答
     }
 
-    if (((uint32_t)reg + (uint32_t)len) > (uint32_t)I2C_HOST_REG_MAX)
-    {
+    if (((uint32_t)reg + (uint32_t)len) > (uint32_t)I2C_HOST_REG_MAX) {
         return RET_INVALID_ARGS;
     }
 
@@ -126,22 +110,18 @@ int i2cWriteRegs(uint8_t bus, uint16_t addr, uint8_t reg, const uint8_t *buf, ui
     return RET_SUCCESS;
 }
 
-int i2cReadRegs(uint8_t bus, uint16_t addr, uint8_t reg, uint8_t *buf, uint16_t len)
-{
+int i2cReadRegs(uint8_t bus, uint16_t addr, uint8_t reg, uint8_t *buf, uint16_t len) {
     i2cHostDev_t *dev = devFrom(bus, addr);
 
-    if ((dev == NULL) || (buf == NULL) || (len == 0u))
-    {
+    if ((dev == NULL) || (buf == NULL) || (len == 0u)) {
         return RET_INVALID_ARGS;
     }
 
-    if (s_err[bus] != 0)
-    {
-        return RET_TIMEOUT;                 // 模拟总线超时：缓冲区不得被改写
+    if (s_err[bus] != 0) {
+        return RET_TIMEOUT; // 模拟总线超时：缓冲区不得被改写
     }
 
-    if (((uint32_t)reg + (uint32_t)len) > (uint32_t)I2C_HOST_REG_MAX)
-    {
+    if (((uint32_t)reg + (uint32_t)len) > (uint32_t)I2C_HOST_REG_MAX) {
         return RET_INVALID_ARGS;
     }
 
@@ -150,7 +130,6 @@ int i2cReadRegs(uint8_t bus, uint16_t addr, uint8_t reg, uint8_t *buf, uint16_t 
     return RET_SUCCESS;
 }
 
-int i2cProbe(uint8_t bus, uint16_t addr)
-{
+int i2cProbe(uint8_t bus, uint16_t addr) {
     return (devFrom(bus, addr) != NULL) ? RET_SUCCESS : RET_NO_OBJECT;
 }

@@ -13,7 +13,7 @@
 
 /// 传感器属性组是否启用
 #ifndef CONFIG_SACP_TMPL_SENSOR
-#define CONFIG_SACP_TMPL_SENSOR             1
+#define CONFIG_SACP_TMPL_SENSOR 1
 #endif
 
 #endif // __SACP_LOCAL_CONFIG_H__

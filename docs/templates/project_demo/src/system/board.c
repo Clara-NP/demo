@@ -31,8 +31,8 @@
 #include <tmpl_sensor.h>
 
 #define TRACE_ENABLE
-#define TRACE_LEVEL     T_INFO
-#define TRACE_TAG       "board"
+#define TRACE_LEVEL T_INFO
+#define TRACE_TAG   "board"
 #include <common/trace.h>
 
 #include "board.h"
@@ -41,27 +41,26 @@
  * 板级描述符表（本工程唯一硬件事实来源）
  * ========================================================================== */
 
-static const tmplSensorConfig_t s_tmplSensors[] =
-{
+static const tmplSensorConfig_t s_tmplSensors[] = {
     {
-        .id            = SENSOR_PRESSURE,
-        .chip          = TMPL_SENSOR_CHIP_A,
-        .bus           = I2C_BUS_0,
-        .address       = 0x48,
-        .flags         = 0,
+        .id = SENSOR_PRESSURE,
+        .chip = TMPL_SENSOR_CHIP_A,
+        .bus = I2C_BUS_0,
+        .address = 0x48,
+        .flags = 0,
         .chipParameter = "range:500",
     },
     {
-        .id            = SENSOR_TEMPERATURE,
-        .chip          = TMPL_SENSOR_CHIP_B,
-        .bus           = I2C_BUS_0,
-        .address       = 0x49,
-        .flags         = TMPL_SENSOR_FLAG_SCALE_0_1,
+        .id = SENSOR_TEMPERATURE,
+        .chip = TMPL_SENSOR_CHIP_B,
+        .bus = I2C_BUS_0,
+        .address = 0x49,
+        .flags = TMPL_SENSOR_FLAG_SCALE_0_1,
         .chipParameter = NULL,
     },
 };
 
-#define TMPL_SENSOR_NUM     (sizeof(s_tmplSensors) / sizeof(s_tmplSensors[0]))
+#define TMPL_SENSOR_NUM (sizeof(s_tmplSensors) / sizeof(s_tmplSensors[0]))
 
 /**
  * @brief 编译期容量校验：描述符条数不得超过 CONFIG_TMPL_SENSOR_MAX_NUM
@@ -69,40 +68,34 @@ static const tmplSensorConfig_t s_tmplSensors[] =
  * @note 用 typedef 而不是 `#if`：`#if` 在预处理阶段拿不到 `sizeof`，
  *       写成 `#if (sizeof(x)/sizeof(x[0])) > N` 无法通过编译（模板中的待修正项）
  */
-typedef char tmplSensorCapacityCheck_t[
-    (TMPL_SENSOR_NUM <= CONFIG_TMPL_SENSOR_MAX_NUM) ? 1 : -1];
+typedef char tmplSensorCapacityCheck_t[(TMPL_SENSOR_NUM <= CONFIG_TMPL_SENSOR_MAX_NUM) ? 1 : -1];
 
 /* ==========================================================================
  * 初始化
  * ========================================================================== */
 
-int boardTmplSensorInit(void)
-{
+int boardTmplSensorInit(void) {
     int inited = tmplSensorInit(s_tmplSensors, (int)TMPL_SENSOR_NUM);
 
-    if (inited <= 0)
-    {
+    if (inited <= 0) {
         /* 板级失败必须显式记录：不允许"静默少一个传感器" */
         elog("board: no tmpl sensor initialized, ret:%d", inited);
         return RET_NO_OBJECT;
     }
 
-    if (inited < (int)TMPL_SENSOR_NUM)
-    {
+    if (inited < (int)TMPL_SENSOR_NUM) {
         wlog("board: only %d/%d tmpl sensors initialized", inited, (int)TMPL_SENSOR_NUM);
     }
 
     return inited;
 }
 
-int boardInit(void)
-{
+int boardInit(void) {
     int count = 0;
     int ret = boardTmplSensorInit();
 
-    if (ret > 0)
-    {
-        count ++;
+    if (ret > 0) {
+        count++;
     }
 
     ilog("board init done, modules:%d", count);

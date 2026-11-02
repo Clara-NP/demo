@@ -24,12 +24,16 @@
 ## 2. 快速开始
 
 ```bash
+./tools/bootstrap.sh             # 环境自检（工具链 / 配置 / 目录），不修改系统
+python3 tools/check_env.py       # 同上，只读检查；CI 可用（--strict 让可选缺失也失败）
+
 # 模板冒烟构建 + 单测（不含产品构建）
 cmake -S docs/templates -B build
 cmake --build build              # smoke_app + smoke_test，零警告（-Werror）
 ctest --test-dir build --output-on-failure
 
-# 分层守护
+# 格式 / 分层
+clang-format --dry-run --Werror $(git ls-files 'framework/**' 'projects/**' 'docs/templates/**' | grep -E '\.(c|h)$')
 python3 tools/check_layers.py
 ```
 
@@ -51,4 +55,6 @@ python3 tools/check_layers.py
 | `check_layers.py` | ✅ 通过，但当前扫描 **0 个文件**（样板全在 `docs/templates/`，被 `SKIP_DIRS` 跳过）；规则表待适配 |
 | 共享框架 | ⛔ `framework/` 只有占位 README（`framework/README.md`），代码未落；骨架由 `docs/templates/framework_demo/` 展开 |
 | `docs/standards/` | ⛔ 未建（`AGENTS.md`、`module-design.md` 中引用的 `coding-style.md` 等均在等这一步） |
+| 代码风格配置 | ✅ `.clang-format` + `clang-format 18.1.3`，模板代码已格式化（`--dry-run --Werror` 通过） |
+| 环境自检 | ✅ `tools/check_env.py` / `tools/bootstrap.sh`；可选工具缺 ninja、doxygen、arm-none-eabi-gcc |
 | `env/presets/`、`.clang-format`、`.githooks/` | ⛔ 未建（`AGENTS.md` §7.1 已标注） |
