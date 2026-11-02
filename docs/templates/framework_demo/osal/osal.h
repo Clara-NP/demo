@@ -14,8 +14,8 @@
  * @par 可重入性
  *  是（读取计数器的原子快照）
  *
- * @note 本文件是 framework_demo 骨架的一部分：复制到真实仓库时展开为 `libs/osal/osal.h`
- * @note 实现放在 `port/<soc>/`，本目录不含任何平台代码
+ * @note 本文件是 framework_demo 骨架的一部分：复制到真实仓库时展开为 `framework/osal/osal.h`
+ * @note 实现放在 `framework/port/<soc>/`，本目录不含任何平台代码
  */
 
 #include <common/generic.h>

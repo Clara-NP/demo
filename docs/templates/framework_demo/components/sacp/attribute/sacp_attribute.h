@@ -15,7 +15,7 @@
  *  否。属性组为单例，调用方需串行化
  *
  * @note 本文件是 framework_demo 骨架的一部分：复制到真实仓库时展开为
- *       `libs/components/sacp/attribute/sacp_attribute.h`
+ *       `framework/components/sacp/attribute/sacp_attribute.h`
  * @note 这是**最小实现**：只覆盖 32 位族属性的读/写/上报，
  *       64 位与 OCTET 表仅保留空壳，便于后续替换为完整 SACP 组件
  */

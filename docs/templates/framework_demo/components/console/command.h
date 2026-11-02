@@ -15,7 +15,7 @@
  *  否（注册表为单例）
  *
  * @note 本文件是 framework_demo 骨架的一部分：复制到真实仓库时展开为
- *       `libs/components/console/command.h`
+ *       `framework/components/console/command.h`
  */
 
 #include <common/generic.h>

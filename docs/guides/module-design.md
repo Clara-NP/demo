@@ -14,7 +14,7 @@
 
 | 原模板文件 | 现存同源位置 | 比对结果 |
 |---|---|---|
-| `include/tmpl_sensor.h` | `docs/templates/project_demo/libs/drivers/devices/tmpl_sensor/` | 完全相同 |
+| `include/tmpl_sensor.h` | `docs/templates/framework_demo/drivers/devices/tmpl_sensor/` | 完全相同 |
 | `src/tmpl_sensor.c` | 同上 | 完全相同 |
 | `cli/cli_tmpl_sensor.c` | 同上 | 完全相同 |
 | `tests/test_tmpl_sensor.c` | `docs/templates/project_demo/test/` | 完全相同 |
@@ -30,18 +30,18 @@
 
 | 角色 | 位置 | 说明 |
 |---|---|---|
-| 公开头 | `docs/templates/project_demo/libs/drivers/devices/tmpl_sensor/tmpl_sensor.h` | 描述符 + 枚举 + API + `#ifndef` 默认值 |
+| 公开头 | `docs/templates/framework_demo/drivers/devices/tmpl_sensor/tmpl_sensor.h` | 描述符 + 枚举 + API + `#ifndef` 默认值 |
 | 实现 | `.../tmpl_sensor.c` | 控制器单例 + 实例数组 + chip 分发 |
 | 自检 CLI | `.../cli_tmpl_sensor.c` | `list / read / mode / dump` |
-| 平台适配 | `docs/templates/project_demo/port/host/soc_tmpl_sensor_stub.c` | 唯一允许芯片头的落点 |
+| 平台适配 | `docs/templates/framework_demo/port/host/soc_tmpl_sensor_stub.c` | 唯一允许芯片头的落点 |
 | 工程侧 | `docs/templates/project_demo/src/{config,system,sacp}` | 逻辑 ID、容量、板级表、协议接入 |
 | 单测 | `docs/templates/project_demo/test/test_tmpl_sensor.c` | host 单测 + 假总线 |
 
-新增模块（在目标工程内）：
+新增模块（目标是共享框架，不是某个工程）：
 
 ```bash
-cp -r docs/templates/project_demo/libs/drivers/devices/tmpl_sensor \
-      <目标工程>/libs/drivers/devices/<name>
+cp -r docs/templates/framework_demo/drivers/devices/tmpl_sensor \
+      framework/drivers/devices/<name>
 # 四组改名：tmpl_sensor→<name>、tmplSensor→<name>驼峰、TMPL_SENSOR→<NAME>、tmplsensor→<name>
 ```
 
@@ -149,6 +149,6 @@ Keil 双轨并存时逐 target 勾选：`<name>.c`、`cli_<name>.c`、Include Pa
 
 ## 7. 遗留
 
-1. ~~`libs/common`、`libs/drivers/bus/i2c`、`libs/components/{console,sacp}` 未提供~~（已完成：`docs/templates/framework_demo/` 最小实现，`smoke_app` 编译通过、`smoke_test` 9/9 用例通过）
+1. ~~`framework/common`、`framework/drivers/bus/i2c`、`framework/components/{console,sacp}` 未提供~~（已完成：`docs/templates/framework_demo/` 最小实现，`smoke_app` 编译通过、`smoke_test` 9/9 用例通过）
 2. ~~样板无冒烟编译目标~~（已完成：`docs/templates/CMakeLists.txt` 含 `smoke_app` / `smoke_test`）
 3. 历史分析文档（`docs/reference/4x-mcu-framework-analysis.md`、`docs/design/platform-plan.md`）中"在 `docs/templates/module/` 放满分模块"属**当时的方案快照**，不再代表当前结构，未回改

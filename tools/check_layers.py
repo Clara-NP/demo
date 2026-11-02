@@ -32,14 +32,14 @@ SKIP_DIRS = {
     "third_party", "generated", "docs",
 }
 
-# 芯片厂商 SDK / CMSIS 内核头：仅允许出现在 port/ 与 libs/third_party/
+# 芯片厂商 SDK / CMSIS 内核头：仅允许出现在 framework/port/ 与 framework/third_party/
 VENDOR_PATTERNS = [
     "stm32*.h", "esp_*.h", "nrf*.h", "gd32*.h", "at32*.h", "hc32*.h",
     "ch32*.h", "sam*.h", "fsl_*.h", "mimxrt*.h", "lpc*.h", "xmc_*.h",
     "cy_*.h", "core_cm*.h", "cmsis_*.h", "cmsis_os*.h", "hal.h",
 ]
 
-# RTOS 头：仅允许出现在 libs/osal/ 与 port/
+# RTOS 头：仅允许出现在 framework/osal/ 与 framework/port/
 RTOS_PATTERNS = [
     "freertos.h", "task.h", "queue.h", "semphr.h", "timers.h",
     "event_groups.h", "portmacro.h", "stream_buffer.h",
@@ -53,13 +53,13 @@ SOC_PATTERNS = ["soc_*.h"]
 RULES = [
     (
         "业务层/组件不得引用芯片厂商 SDK 头",
-        ["projects/*/src/**", "libs/components/**", "libs/services/**", "libs/drivers/**"],
+        ["projects/*/src/**", "framework/components/**", "framework/services/**", "framework/drivers/**"],
         VENDOR_PATTERNS,
     ),
     (
         "业务层/设备驱动/组件不得引用 soc_ 抽象层",
-        ["projects/*/src/**", "libs/components/**", "libs/services/**",
-         "libs/drivers/devices/**", "libs/drivers/devices/**/*.c"],
+        ["projects/*/src/**", "framework/components/**", "framework/services/**",
+         "framework/drivers/devices/**", "framework/drivers/devices/**/*.c"],
         SOC_PATTERNS,
     ),
     (
@@ -68,7 +68,7 @@ RULES = [
         RTOS_PATTERNS,
     ),
     (
-        "禁止相对路径穿越 include（如 ../../libs/...）",
+        "禁止相对路径穿越 include（如 ../../framework/...）",
         ["**"],
         ["../**"],
     ),
@@ -76,8 +76,8 @@ RULES = [
 
 # 上述规则的例外路径（相对仓库根）
 ALLOW_PATHS = {
-    "非 osal/port 不得引用 RTOS 头": ["libs/osal/**", "port/**"],
-    "禁止相对路径穿越 include（如 ../../libs/...）": [],
+    "非 osal/port 不得引用 RTOS 头": ["framework/osal/**", "framework/port/**"],
+    "禁止相对路径穿越 include（如 ../../framework/...）": [],
 }
 INCLUDE_RE = re.compile(r'^\s*#\s*include\s*[<"]([^>"]+)[>"]')
 ALLOW_RE = re.compile(r"layer-allow\s*:\s*\S+")

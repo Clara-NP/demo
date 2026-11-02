@@ -14,7 +14,7 @@
  *  - 所有对外 API 的第一参数都是逻辑 ID，调用方永远拿不到内部实例指针
  *
  * @par 分层位置
- *  设备驱动层（libs/drivers/devices/tmpl_sensor）→ 依赖 i2c/i2c.h（抽象总线）
+ *  设备驱动层（framework/drivers/devices/tmpl_sensor）→ 依赖 i2c/i2c.h（抽象总线）
  *
  * @par 逻辑 ID 来源
  *  config/export_ids.h 中的 EXPORT_TMPL_SENSOR 枚举（由板级配置绑定到实际器件）

@@ -13,19 +13,20 @@
 
 demo 拆成两层落位：
 
-- **模块与平台（工程内自带）**：`libs/drivers/devices/tmpl_sensor/` + `port/host/`
-- **工程层（本模板）**：`docs/templates/project_demo/src/{config,system,sacp}` + `test/` + `tools/` + `data/` + `docs/`
+- **框架（所有工程共用一份，位于环境层）**：`framework/drivers/devices/tmpl_sensor/` + `framework/port/host/`
+  （模板期地址：`docs/templates/framework_demo/drivers/devices/tmpl_sensor/`、`.../framework_demo/port/host/`）
+- **工程层（本模板）**：`src/{config,system,sacp}` + `test/` + `tools/` + `data/` + `docs/`
 
 > 定位：本目录**只被复制、不被构建**（`docs/` 在 `check_layers.py` 的 `SKIP_DIRS` 内）。
 
-代码样板收敛为**一份**：`libs/drivers/devices/tmpl_sensor/` + `port/host/`（均在工程内）；其契约说明见 `docs/guides/module-design.md`。
+代码样板收敛为**一份**：`framework_demo/drivers/devices/tmpl_sensor/` + `framework_demo/port/host/`；其契约说明见 `docs/guides/module-design.md`。
 
 ## 2. 目录职责
 
 | 路径 | 职责 | 内容来源 |
 |---|---|---|
-| `libs/drivers/devices/tmpl_sensor/` | 设备驱动：描述符解析、实例数组、chip 分发、自检 CLI | 模板 `include/` + `src/` + `cli/` |
-| `port/host/soc_tmpl_sensor_stub.c` | 平台适配（唯一允许芯片头的地方） | 模板 `port/` |
+| `framework_demo/drivers/devices/tmpl_sensor/` | 设备驱动：描述符解析、实例数组、chip 分发、自检 CLI | 模板 `include/` + `src/` + `cli/` |
+| `framework_demo/port/host/soc_tmpl_sensor_stub.c` | 平台适配（唯一允许芯片头的地方） | 模板 `port/` |
 | `src/config/export_ids.h` | 逻辑 ID + 哨兵 | 模板 `board_fragment.c` 片段 1 |
 | `src/config/framework_config.h` | 容量宏派生 | 片段 2 |
 | `src/system/board.{h,c}` | 描述符表 + 编译期校验 + 初始化 | 片段 3、4 |
@@ -55,8 +56,8 @@ demo 拆成两层落位：
 
 ## 5. 后续待办
 
-1. ~~建 `libs/common`、`libs/drivers/bus/i2c`、`libs/components/{console,sacp}` 最小实现~~（已完成：见 `docs/templates/framework_demo/`，由 `docs/templates/CMakeLists.txt` 冒烟编译）
+1. ~~建 `framework/common`、`framework/drivers/bus/i2c`、`framework/components/{console,sacp}` 最小实现~~（已完成：见 `docs/templates/framework_demo/`，由 `docs/templates/CMakeLists.txt` 冒烟编译）
 2. 复制到 `projects/<id>/` 时补 `CMakeLists.txt`，并把 `build.sh` 换成真实构建+单测
 3. ~~修模板 `#if sizeof`~~（已完成：模板已删除，正确写法在 `src/system/board.c`，契约写入 `docs/guides/module-design.md` §3）
-4. `tools/check_layers.py` 规则表适配 `libs/**` 与 `projects/*/src/**`
+4. `tools/check_layers.py` 规则表适配 `framework/**` 与 `projects/*/src/**`
 5. ~~加"模板冒烟编译"目标~~（已完成：`docs/templates/CMakeLists.txt` 的 `smoke_app` / `smoke_test`）

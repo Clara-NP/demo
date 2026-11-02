@@ -22,7 +22,7 @@
  * @par 可重入性
  *  host 实现依赖 stdio，非线程安全；ISR 中禁止调用
  *
- * @note 本文件是 framework_demo 骨架的一部分：复制到真实仓库时展开为 `libs/common/trace.h`
+ * @note 本文件是 framework_demo 骨架的一部分：复制到真实仓库时展开为 `framework/common/trace.h`
  */
 
 #include <stdarg.h>

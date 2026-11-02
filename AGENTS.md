@@ -11,10 +11,11 @@
 
 ## 1. 工作区结构
 
-- **环境层**：`AGENTS.md`、`.github/`、`docs/`、`env/`、`tools/`、`libs/` —— 可复用，与工程无关。
-- `libs/` 内部划分：`hal/`（纯接口）、`drivers/{bus,devices}/`、`components/`、`osal/`；
+- **环境层**：`AGENTS.md`、`.github/`、`docs/`、`env/`、`tools/`、`framework/` —— 可复用，与工程无关。
+- `framework/` 内部划分：`common/`、`osal/`、`hal/`（纯接口）、`drivers/{bus,devices}/`、`components/`、`port/<soc>/`（平台实现，唯一允许芯片头的落点）；
   新代码用 `components/`（`services/` 若存在视为旧称）。
-- **实例层**：`projects/<id>/` —— 具体工程，完全自包含，可随时增删。
+- **共享一份**：`framework/` 属环境层，所有工程共用同一份；**工程目录内不得出现 `framework/` 或 `port/` 副本**。
+- **实例层**：`projects/<id>/` —— 只放产品差异（逻辑 ID、容量、板级表、协议接入、单测），可随时增删。
 - 依赖方向单向：工程可引用环境层；**环境层禁止引用具体工程**。
 - 工程入口：`projects/<id>/project.yaml`（芯片、板卡、工具链、preset）。
 
@@ -35,10 +36,10 @@
 
 ## 4. 硬性禁止
 
-- 业务层（`src/app`、`libs/services`、`libs/drivers`）不得出现厂商 SDK / RTOS 头文件。
+- 业务层（`projects/<id>/src/**`）与组件/驱动层（`framework/**`）不得出现厂商 SDK / RTOS 头文件。
   验证：`python tools/check_layers.py`（规则表在脚本头部，可用 `--list-rules` 查看）
-- 业务层不得用 `#ifdef` 区分芯片或板卡；差异只能位于 `port/<soc>/`。
-- 禁止修改 `libs/third_party/**`、`**/generated/**`、`**/*.ld`、`**/startup_*.s`。
+- 业务层不得用 `#ifdef` 区分芯片或板卡；差异只能位于 `framework/port/<soc>/`。
+- 禁止修改 `framework/third_party/**`、`**/generated/**`、`**/*.ld`、`**/startup_*.s`。
 - 禁止修改 `.deps/**`（由同步脚本重建）；`.deps/` 必须被 gitignore。
 - 禁止 `malloc/free`；禁止在中断上下文阻塞、打印、动态分配。
 - 禁止无超时的等待循环（`while` / 忙等 / 信号量）。
@@ -88,8 +89,8 @@
 
 ## 8. 文档索引
 
-- **新增/修改模块（先读这个）**：`docs/guides/module-development.md`（流程）+ `docs/guides/module-design.md`（契约）；流程化执行用 skill `add-module`；代码样板见 `docs/templates/project_demo/libs/drivers/devices/tmpl_sensor/`
-- **模板落地示例（工程层与库层怎么分）**：`docs/templates/project_demo/`（工程骨架，复制用）+ 模块实体在 `libs/drivers/devices/`、平台实现在 `port/`
+- **新增/修改模块（先读这个）**：`docs/guides/module-development.md`（流程）+ `docs/guides/module-design.md`（契约）；流程化执行用 skill `add-module`；代码样板见 `docs/templates/framework_demo/drivers/devices/tmpl_sensor/`
+- **模板落地示例（工程层与框架层怎么分）**：`docs/templates/project_demo/`（工程骨架，复制用）+ 模块实体在 `framework/drivers/devices/`、平台实现在 `framework/port/`
 - **框架层骨架**：`docs/templates/framework_demo/`（common/osal/drivers/components 的最小实现，由 `docs/templates/CMakeLists.txt` 冒烟编译）
 - **平台总体方案**：`docs/design/platform-plan.md`（分层、约束体系、依赖策略）
 - **外部参考实现分析**：`docs/reference/4x-mcu-framework-analysis.md`（只读笔记，非本仓库规范）

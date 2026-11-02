@@ -1,6 +1,7 @@
 # 嵌入式 C 多工程 AI 协作开发环境 —— 设计方案
 
-> 版本：v1.3（2026-10-30）
+> 版本：v1.4（2026-11-02）
+> 修订：v1.4 统一为"**framework 单份共享**" —— 共享框架统一为顶层 `framework/`（含 `port/<soc>/`）；工程内不出现 `framework/` 或 `port/` 副本；§1.7 中残留的 `libs/` 为旧命名
 > **定位：顶层环境方案**——作用于 `900-test/` 整个工作区（平台层），**不属于任何单个工程**；`projects/` 下的示例仅用于说明，不构成对某个工程的规定。
 > 适用：`/home/clara/001-workspace/900-test` 作为空白起点，嵌入式 C 为主，含少量 Python/Shell 工具，多工程可独立可交互。
 > 目标：仓库可整包下载即用、与内部有哪些工程完全解耦；全 AI 参与开发下，文档充足、约束可执行、跨智能体可快速接手。
@@ -29,7 +30,7 @@
 
 | # | 决策 | 为什么 |
 |---|---|---|
-| 1 | **单一工作区 = 环境层（可复用骨架）+ 工程实例层（`projects/`，可增删）**，两层单向依赖；共享代码仅在 ≥2 工程真正共用时才提取到 `libs/` | 环境与工程混在一起会让“下载即用”失效；默认共享则造成隐式耦合，改一处崩一片 |
+| 1 | **单一工作区 = 环境层（可复用骨架）+ 工程实例层（`projects/`，可增删）**，两层单向依赖；`framework/`（含 `port/<soc>/`）**共享单份**，工程内不复制 | 环境与工程混在一起会让“下载即用”失效；每工程各存一份框架则各自分叉、改一处崩一片 |
 | 2 | 约束分四层：**全局 `AGENTS.md`（常驻）→ 路径级 `*.instructions.md`（glob 匹配）→ skill（按需）→ hook（确定性强制）** | 常驻上下文有注意力预算，全塞进 `AGENTS.md` 会被稀释；纯文字约束不可验证 |
 | 3 | **每条约束必须可被命令验证**（grep / clang-tidy / 单测 / 架构脚本），否则不写 | 不可验证的规则对人和 AI 都只是摆设 |
 | 4 | 默认规范选 **Barr-C:2018 + `-Werror -Wconversion`**；MISRA 仅在认证需求时启用子集 | MISRA 全套对 AI 成本极高且需商业检查器，个人项目收益/成本比差 |
@@ -75,9 +76,9 @@
 │   │   └── porting-guide.md
 │   ├── guides/                     # 使用手册：加工程 / 接新电脑 / 升级环境
 │   └── templates/
-│       ├── design.md               # 方案模板（含按需图章节）
-│       ├── project/                # 新工程脚手架
-│       └── module/                 # 满分模块 golden example
+│       ├── CMakeLists.txt          # 模板冒烟构建（唯一构建入口）
+│       ├── framework_demo/         # 框架骨架 → 展开为环境层 framework/
+│       └── project_demo/           # 工程骨架 → 复制为 projects/<id>/
 ├── env/                            # ★ 环境层构建资产（与工程无关）
 │   ├── cmake/                      # 公共 CMake 模块（Project.cmake 等）
 │   ├── presets/base.json           # 预设模板，工程继承后只写差异
@@ -86,37 +87,36 @@
 │   ├── check_layers.py             # 架构守护：禁止业务层引用芯片头
 │   ├── gen_board_config.py         # board.yaml -> board_config.h
 │   └── run_host_tests.sh
-├── libs/                           # ★ 默认共享单份（所有工程同一版本），见 §1.7
+├── framework/                      # ★ 共享单份：common/ osal/ drivers/ components/ port/<soc>/（见 §1.7）
 └── projects/                       # ★ 实例层，可整体 .gitignore
-    ├── 001-demo/
+    ├── <id>/                       # 由 docs/templates/project_demo/ 复制
     │   ├── AGENTS.md               # ★ 工程级约束（只写差异）
-    │   ├── project.yaml            # ★ 机器可读单一事实来源（含 deps）
-    │   ├── docs/
-    │   │   ├── design/             # ★ 方案文档（approved 后才允许编码）
-    │   │   └── adr/                # 工程级决策
-    │   ├── libs/                   # 工程私有：hal/ osal/ drivers/ services/
-    │   ├── .deps/                  # 可选：版本锁定时生成的库副本（gitignore）
-    │   ├── CMakeLists.txt
-    │   ├── CMakePresets.json       # 板卡切换靠 preset（继承 env/presets）
-    │   ├── board/board.yaml        # 引脚/时钟/外设实例
-    │   ├── src/app/                # 业务：0 芯片依赖
-    │   ├── src/services/
-    │   ├── src/drivers/
-    │   ├── port/stm32f4/           # HAL/OSAL 的芯片实现
-    │   ├── port/esp32/
-    │   └── tests/                  # host 单测 + conformance
-    └── 002-xxx/
+    │   ├── README.md  build.sh     # 工程说明 / 构建入口
+    │   ├── project.yaml            # ★ 机器可读元信息（id / soc / toolchain / presets / 共享框架位置）
+    │   ├── docs/design/            # ★ 方案文档（approved 后才允许编码）
+    │   ├── src/
+    │   │   ├── main.c              # 启动序列：boardInit → sacpInit → 任务
+    │   │   ├── config/             # export_ids.h（逻辑 ID）/ framework_config.h（容量、开关）
+    │   │   ├── system/board.c      # 描述符表：引脚 / 地址 / 参数唯一来源
+    │   │   ├── sacp/               # 协议属性接入（号段 / 上报组 / 写回调）
+    │   │   └── ld/                 # 链接脚本（占位）
+    │   ├── test/                   # host 单测（+ 目标板一致性测试）
+    │   └── tools/  data/           # 工程级脚本 / 现场数据（占位）
+    └── <id2>/
 ```
+
+> 工程内**不出现 `framework/`、`port/` 副本**；驱动与平台后端一律改共享框架。
+> 业务代码变多时可再加 `src/app/`、`src/services/` 子目录，分层见 §4.1。
 
 **两条硬规则**
 
 1. **单向依赖**：工程层可以引用环境层（用 `env/` 的 preset、模板、工具）；**环境层不得引用任何工程**。
-2. **共享按需**：默认每个工程自带 `libs/`（工程私有）；只有 ≥2 个工程真正共用、且接口稳定后，才提取到平台 `libs/`。
+2. **共享单份**：`framework/`（含 `port/<soc>/`）只有一份，所有工程引用同一版本；**工程内不得出现 `framework/` 或 `port/` 副本**。只服务一个工程的代码放该工程 `src/<mod>/`，不进 `framework/`。
 
 **不这么做会怎样**
 
 - 环境层引用具体工程名 → 换电脑 clone 时带上一堆无关工程；工程删除后根文档全是死链。
-- 默认把所有代码塞进平台 `libs/` → 改一个工程的驱动，另一个工程莫名编译失败，且没人知道谁依赖谁。
+- 把只服务一个工程的代码塞进平台 `framework/` → 环境层被具体需求污染，换电脑 clone 到无关代码，删工程后 `framework/` 成垃圾场。
 - 把工具链/引脚写死在工程内而不进 preset → 换板、换电脑都要重配一遍。
 
 ### 1.2 约束的四层分工
@@ -127,7 +127,7 @@
 | **按路径约束** | `.github/instructions/*.instructions.md` + `applyTo` | 相关文件进入上下文时 | C 语言细则、CMake 约定、Python 工具约定 | 与路径无关的流程 |
 | **按需流程** | `.github/skills/<name>/SKILL.md` | AI 按 `description` 匹配任务时 | “建新工程”“移植到新板”“发版检查”等多步骤流程，可带脚本模板 | 长期红线 |
 | **确定性强制** | `.github/hooks/*.json` | 工具调用前后 | 拦截改写生成文件、保存后自动格式化、提交前跑 lint | 需要判断力的规则 |
-| **角色隔离** | `.github/agents/*.agent.md` | 显式调用 | 只读探索、只能改 `tests/`、只能跑命令 | 通用规范 |
+| **角色隔离** | `.github/agents/*.agent.md` | 显式调用 | 只读探索、只能改 `test/`、只能跑命令 | 通用规范 |
 
 **判断口诀**
 
@@ -164,14 +164,15 @@
 3. 只 include 公共接口，不 include 芯片厂商头文件——见 `tools/check_layers.py`。
 
 ## 硬性禁止
-- 禁止在 `src/app/**`、`libs/services/**` 出现 `stm32*hal.h` / `esp_*.h` / `freertos.h`。
+- 禁止在 `projects/<id>/src/**`、`framework/**` 出现 `stm32*hal.h` / `esp_*.h` / `freertos.h`。
   验证：`python tools/check_layers.py`
-- 禁止修改 `libs/third_party/**`、`**/generated/**`、`**/*.ld`、`**/startup_*.s`。
+- 禁止修改 `framework/third_party/**`、`**/generated/**`、`**/*.ld`、`**/startup_*.s`。
 - 禁止直接修改 `.deps/**`（由同步脚本重建）；`.deps/` 必须在工程 `.gitignore` 中。
 - 禁止 `malloc/free`（用 `osal_mem_pool_*`）；禁止 ISR 中阻塞、打印、动态分配。
-- 禁止 `#ifdef STM32 / ESP32` 出现在 `src/app` 与 `libs`（差异只允许在 `port/`）。
+- 禁止 `#ifdef STM32 / ESP32` 出现在 `projects/<id>/src` 与 `framework`（差异只允许在 `framework/port/<soc>/`）。
 - 禁止在环境层（`AGENTS.md`、`docs/`、`env/`、`.github/`、`tools/`）写具体工程名或芯片型号。
-  验证：`grep -rn "projects/00\|STM32F4\|ESP32" docs/ AGENTS.md env/ tools/ | grep -v 示例`
+  例外：`docs/design/`（平台方案）与 `docs/reference/`（外部工程分析）允许示例性质的名称。
+  验证：`grep -rn "projects/00" docs/standards docs/guides docs/adr AGENTS.md env/ tools/ .github/ | grep -v 示例`
 
 ## 语言与类型
 - 固定宽度整数（`stdint.h`），禁止裸 `int/long` 做存储或协议字段。
@@ -208,7 +209,7 @@
 
 ## 硬件
 - MCU: STM32F407 / 168MHz；APP 起始 0x08004000（bootloader 占 16K）
-- 外设实例与引脚唯一来源：`board/board.yaml`（禁止在 .c 里写 GPIOA / Pin_5）
+- 外设实例与引脚唯一来源：`src/system/board.c`（禁止在 .c 里写 GPIOA / Pin_5；若后续改用 `board/board.yaml` 生成，则以其产物为准）
 
 ## 特有红线
 - TIM2 已被占用，禁止复用。
@@ -240,15 +241,15 @@
 ---
 name: port-board
 description: "Use when: 把现有工程移植到新板卡/新芯片（如 STM32 -> ESP32），
-  新增 port/<soc> 实现、board.yaml、CMake preset，并运行 HAL 一致性测试。"
+  新增 framework/port/<soc> 实现、board.yaml、CMake preset，并运行 HAL 一致性测试。"
 ---
 
 # 移植到新板
 
 ## 步骤
 1. 读 `docs/standards/porting-guide.md` 与目标工程 `AGENTS.md`。
-2. 列出现有 `port/<old>/` 的**能力清单**（不是函数清单）。
-3. 复制 `templates/port_dir` 到 `port/<new>/`，逐个实现 hal/osal。
+2. 列出现有 `framework/port/<old>/` 的**能力清单**（不是函数清单）。
+3. 复制 `templates/port_dir` 到 `framework/port/<new>/`，逐个实现 hal/osal。
 4. 生成 `board/board_<new>.yaml`，跑 `python tools/gen_board_config.py`。
 5. 加 CMake preset：`cmake --preset <new>`。
 6. 跑一致性测试：`ctest -R conformance`。
@@ -256,7 +257,7 @@ description: "Use when: 把现有工程移植到新板卡/新芯片（如 STM32 
 
 ## 禁止
 - 不允许在 `src/app` 加 `#ifdef`。
-- 不允许复制 `port/<old>` 后逐个函数改名——接口一致就该零改动编译。
+- 不允许复制 `framework/port/<old>` 后逐个函数改名——接口一致就该零改动编译。
 ```
 
 **建议先建的 4 个 skill（按投入产出排序）**
@@ -296,16 +297,16 @@ graph LR
 | 通用编码规范、模板、脚手架、工具链 preset | 环境层 | 与具体芯片/工程无关 |
 | 平台级技术决策（为何 monorepo、为何 CMake） | `docs/adr/` | 影响所有工程 |
 | 方案文档、工程级 ADR、板级配置、`board.yaml` | `projects/<id>/` | 提到具体引脚/型号/时序 |
-| 只在单个工程使用的代码 | `projects/<id>/libs/` | 默认位置 |
-| ≥2 个工程共用且接口稳定的代码 | 平台 `libs/` | 需显式声明依赖 |
+| 只在单个工程使用的代码 | `projects/<id>/src/<mod>/` | 应用模块，不是共享库 |
+| 所有工程共用的驱动/组件/平台后端 | 平台 `framework/`（含 `port/<soc>/`） | 共享单份，工程内不得复制 |
 
-**工程间引用必须显式**（禁止靠目录相邻隐式引用）。**默认阶段不写 deps**：所有工程共用平台 `libs/` 同一版本；只有需要“不同工程不同版本”时才启用版本坐标，详见 [§1.7](#17-libs-依赖管理策略含决策过程)。
+**工程间引用必须显式**（禁止靠目录相邻隐式引用）。**默认阶段不写 deps**：所有工程共用 `framework/` 同一版本；只有需要“不同工程不同版本”时才启用版本坐标，详见 [§1.7](#17-framework原-libs依赖管理策略含决策过程)。
 
 ```yaml
 # projects/003-gateway/project.yaml —— 仅在启用版本锁定时使用
 deps:
-  - libs://crc16@v1.2.0         # 平台共享库，tag
-  - libs://lwip@feat/dma        # 开发期：分支
+  - fw://crc16@v1.2.0           # 平台共享库，tag
+  - fw://lwip@feat/dma          # 开发期：分支
   - project://002-comm          # 引用另一个工程，可追溯
 ```
 
@@ -378,12 +379,11 @@ git check-ignore projects/001-demo && echo "工程未入库，符合预期"
 
 | 路径 | 作用 | 消耗者 |
 |---|---|---|
-| `design.md` | 方案文档骨架（含“图按需”的条件章节） | `design-first` skill |
-| `adr.md` | ADR 骨架 | 你 / AI 写决策时 |
-| `project/` | 新工程脚手架：`AGENTS.md`、`project.yaml`、`CMakeLists.txt`、`CMakePresets.json`、`board/board.yaml`、`src/`、`port/`、`tests/` 空骨架 | `new-project` skill |
-| `module/` | **满分模块**：`include/foo.h`、`src/foo.c`、`tests/test_foo.c`、`mock/`、`CMakeLists.txt` | `add-driver` skill 及所有新模块 |
+| `framework_demo/` | **框架骨架**：`common/`、`osal/`、`drivers/`、`components/`、`port/host/`；展开为环境层 `framework/` | `add-module` skill |
+| `project_demo/` | 新工程脚手架：`AGENTS.md`、`project.yaml`、`src/{config,system,sacp}`、`test/`（**不含 `framework/`、`port/`**） | `new-project` skill |
+| `CMakeLists.txt` | 两个模板的冒烟构建（`smoke_app` / `smoke_test`），唯一构建入口 | CI / 本地验证 |
 
-`module/` 是全环境性价比最高的目录：给 AI 一个“可模仿的正确答案”，胜过 100 条文字规范。
+这两个目录是全环境性价比最高的地方：给 AI 一个"可模仿的正确答案"，胜过 100 条文字规范。
 
 #### 1.6.5 工程内 `docs/`（对照，不属于平台层）
 
@@ -399,12 +399,14 @@ git check-ignore projects/001-demo && echo "工程未入库，符合预期"
 | 优先级 | 文件 | 理由 |
 |---|---|---|
 | 1 | `docs/standards/coding-style.md` | 承接 `AGENTS.md` 放不下的细则 |
-| 2 | `docs/templates/module/` | 决定 AI 的代码“品味” |
+| 2 | `docs/templates/framework_demo/` | 决定 AI 的代码“品味” |
 | 3 | `docs/guides/add-project.md` | 让“加工程”不依赖人的记忆 |
 
 `adr/`、`porting-guide.md`、`review-checklist.md` 等有真实痛点后再补——空文档会腐烂，过期文档会误导 AI 严格执行错误内容。
 
-### 1.7 `libs` 依赖管理策略（含决策过程）
+### 1.7 framework（原 libs）依赖管理策略（含决策过程）
+
+> 本节保留历史命名：下文出现的 `libs/`、`libs::`、`libs://`、`.deps/libs` 均指共享框架 `framework/`。
 
 #### 1.7.0 结论
 
@@ -434,14 +436,14 @@ git check-ignore projects/001-demo && echo "工程未入库，符合预期"
 
 ```mermaid
 graph LR
-  L[900-test/libs/ 单份] --> P1[projects/001-demo]
+  L[900-test/framework/ 单份] --> P1[projects/001-demo]
   L --> P2[projects/002-xxx]
 ```
 
-- 工程通过 **CMake imported target**（`libs::crc16`）引用，禁止相对路径 `#include "../../libs/...`。
-- 改 libs 直接改，所有工程立即生效。
-- **唯一代价**：改 libs 后必须构建**全部**工程——工程数量少时完全可接受。
-- 规则：改动 libs 的人负责跑一遍所有依赖工程的构建（起步阶段可行）。
+- 工程通过 **CMake imported target**（`fw::crc16`）引用，禁止相对路径 `#include "../../framework/..."`。
+- 改 framework 直接改，所有工程立即生效。
+- **唯一代价**：改 framework 后必须构建**全部**工程——工程数量少时完全可接受。
+- 规则：改动 framework 的人负责跑一遍所有依赖工程的构建（起步阶段可行）。
 
 #### 1.7.3 升级路径：什么时候上 worktree
 
@@ -666,7 +668,7 @@ grep -q '^status: approved' "$design" || { echo "✗ 方案未 approved，禁止
 
 按有效性排序：
 
-1. **给 golden example，而不是给规则。** `docs/templates/module/` 放一个满分模块（契约注释、错误码、超时、单测、mock），并写明“新模块照此结构”。模仿的稳定性远高于服从文字。
+1. **给 golden example，而不是给规则。** `docs/templates/framework_demo/`（驱动样板 + 框架）与 `docs/templates/project_demo/`（工程骨架）是可模仿的正确答案。模仿的稳定性远高于服从文字。
 2. **可执行化。** 规范落到 `.clang-format`、`.clang-tidy`、编译选项、`check_layers.py`、`pre-commit`。AI 会读配置文件，不会读 `docs/` 深处第三章。
 3. **host 可编译 + 单测。** 纯逻辑能在 x86 上 `ctest`，AI 才能自闭环验证。
 4. **拆小任务 + 命令化验收。**
@@ -684,7 +686,7 @@ graph TD
   APP["app/ 业务逻辑<br/>纯 C，host 可编译"] --> SVC["services/ 协议·算法·状态机<br/>零硬件依赖"]
   SVC --> DRV["drivers/ 设备模型<br/>只依赖 hal 接口"]
   DRV --> HAL["hal/ 纯接口<br/>不出现寄存器/厂商符号"]
-  HAL --> PORT["port/soc/ 实现<br/>STM32 / ESP32"]
+  HAL --> PORT["framework/port/<soc> 实现<br/>STM32 / ESP32"]
   PORT --> BSP["board/ 引脚·时钟·实例<br/>单一来源生成"]
   APP -.-> OSAL["osal/ 时间·临界区·线程·日志·内存"]
   SVC -.-> OSAL
@@ -703,7 +705,7 @@ graph TD
 4. **多态** = 运行时 ops 调用；工厂函数 `foo_create()` 隐藏实现
 
 ```c
-/* libs/hal/include/hal_gpio.h —— 只表达"能力"，永不出现 GPIOA / 引脚常量 */
+/* framework/hal/hal_gpio.h —— 只表达"能力"，永不出现 GPIOA / 引脚常量 */
 typedef struct gpio_ops {
     int (*init)(void *ctx, const gpio_cfg_t *cfg);
     int (*write)(void *ctx, bool level);   /* 可返回 -ETIMEDOUT */
@@ -756,10 +758,10 @@ const gpio_t *board_gpio(board_gpio_id_t id);
 
 | 部分 | 开关板改动 |
 |---|---|
-| `src/app/`、`libs/services/` | **0 行** |
-| `libs/drivers/` | **0 行** |
-| `libs/hal/include/`、`osal/include/` | **0 行** |
-| `port/esp32/`（hal + osal 实现） | 新增 6~10 个文件 |
+| `src/app/`、`framework/services/` | **0 行** |
+| `framework/drivers/` | **0 行** |
+| `framework/hal/`、`framework/osal/` | **0 行** |
+| `framework/port/esp32/`（hal + osal 实现，环境层共享） | 新增 6~10 个文件 |
 | `board/board_esp32.yaml` + 生成的 `board_config.h` | 新增 1 个 yaml |
 | `CMakePresets.json` + toolchain file | 新增 1 个 preset |
 | 启动文件 / 链接脚本 / 分区表 | 新增 |
@@ -769,7 +771,7 @@ const gpio_t *board_gpio(board_gpio_id_t id);
 
 ### 5.3 HAL 一致性测试（移植的验收标准）
 
-`tests/conformance/test_gpio_conformance.c` 同一份用例在两个 target 上跑：
+`test/conformance/test_gpio_conformance.c` 同一份用例在两个 target 上跑：
 
 - 上电默认电平是否符合约定
 - 写入后读回是否一致
@@ -789,7 +791,7 @@ const gpio_t *board_gpio(board_gpio_id_t id);
 #endif
 ```
 
-规则：**芯片/板卡差异只允许存在于 `port/<soc>/` 与生成的 `board_config.h`。** 业务层出现条件编译 = 架构违规。
+规则：**芯片/板卡差异只允许存在于 `framework/port/<soc>/` 与生成的 `board_config.h`。** 业务层出现条件编译 = 架构违规。
 
 ---
 
@@ -836,7 +838,7 @@ const gpio_t *board_gpio(board_gpio_id_t id);
 
 **Week 1（做第一个真实工程）**
 
-4. `docs/templates/module/` 放 golden module（含单测 + mock）。
+4. `docs/templates/framework_demo/` 放 golden module（含单测 + mock）。
 5. `tools/check_layers.py` + `ctest` host preset。
 6. `projects/001-demo/AGENTS.md` + `project.yaml`。
    ✅ 验收：AI 是否在 `app/` 里 include 芯片头。
@@ -844,7 +846,7 @@ const gpio_t *board_gpio(board_gpio_id_t id);
 **Week 2~4（第二个工程 / 第二块板）**
 
 7. 加 `projects/002-*/`，**故意用不同芯片**——这是对第 4、5 节抽象的唯一有效检验。
-8. 加 `tests/conformance/`。
+8. 加 `test/conformance/`。
 9. 加 skill：`new-project`、`port-board`。
    ✅ 验收：移植到新板时 `src/app` diff 是否为 0 行。**若 diff 很大，问题在抽象，不在文档。**
 
@@ -860,7 +862,7 @@ const gpio_t *board_gpio(board_gpio_id_t id);
 |---|---|---|
 | 所有规范塞进一个巨型 AGENTS.md | “写得真全” | 超预算被稀释，红线被忽略；维护成本高，逐渐过期 |
 | 只写“要高质量/要注释” | 感觉有约束 | 不可验证 = 不存在，AI 行为不变 |
-| 把只服务一个工程的代码塞进平台 `libs/` | 感觉在“复用” | 环境层被具体需求污染，换电脑 clone 到无关代码，删工程后 `libs/` 成垃圾场 |
+| 把只服务一个工程的代码塞进平台 `framework/` | 感觉在“复用” | 环境层被具体需求污染，换电脑 clone 到无关代码，删工程后 `framework/` 成垃圾场 |
 | 多副本各自 checkout 同一分支并各自提交 | 看起来“独立” | 产生分叉，合并后“单独编都过、一起编就炸” |
 | 驱动直接 `#include "stm32f4xx_hal.h"` | 写得顺 | 换板全仓重写，抽象层形同虚设 |
 | 用 `#ifdef STM32/ESP32` 适配 | “只改几行” | 分支永久共存，改一行要验证两个 target |
@@ -873,7 +875,7 @@ const gpio_t *board_gpio(board_gpio_id_t id);
 ### 如果只能做三件事
 
 1. **`AGENTS.md`**（红线 + 完成标准 + 文档索引，≤80 行）—— 决定 AI 的“常识”。
-2. **`docs/templates/module/` 一个满分模块** —— 决定 AI 的“品味”，比 100 条规范有效。
+2. **`docs/templates/framework_demo/` + `project_demo/`** —— 决定 AI 的“品味”，比 100 条规范有效。
 3. **`tools/check_layers.py` + host `ctest`** —— 决定“换板少改代码”和“AI 能自验证”。
 
 其余（skills、hooks、custom agents、MISRA、多板 scaffold）都是在这三件成立之后的**放大器**；提前做，只会得到一堆漂亮但不生效的文档。
@@ -1062,7 +1064,7 @@ applyTo: "**/*.{c,h}"
 |---|---|
 | 语言级红线与风格细则 | 多步骤流程（→ **skill**） |
 | 注释/接口契约 | 需要你手动触发的单次任务（→ **prompt**） |
-| 路径级禁令（如 `port/**` 才可 include 芯片头） | 必须绝对不发生的事（→ **hook**） |
+| 路径级禁令（如 `framework/port/**` 才可 include 芯片头） | 必须绝对不发生的事（→ **hook**） |
 | 构建、脚本、目录约定 | 教程、长篇原理、完整代码示例 |
 
 **判据**：这段内容是否“只要涉及这类文件就永远成立”？是 → instructions；否 → 别的类型。
@@ -1283,7 +1285,7 @@ tools: [read, search, runInTerminal]
 | 上板调试（只读，防止乱改） | 日常写代码 |
 | 架构审查（只读 + 只在 `docs/` 输出） | 改一个小函数 |
 | 大批量探索（隔离上下文） | 问一个概念 |
-| 测试编写（只能改 `tests/`） | 一次性脚本 |
+| 测试编写（只能改 `test/`） | 一次性脚本 |
 
 ### E.7 验证方法
 

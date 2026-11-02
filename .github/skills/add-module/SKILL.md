@@ -5,7 +5,7 @@ description: "Use when: 新增一个嵌入式 C 模块——传感器/外设驱�
 
 # 新增一个模块（add-module）
 
-> 配套：`docs/guides/module-development.md`（流程与原理）、`docs/guides/module-design.md`（契约与差异）、`docs/templates/project_demo/libs/drivers/devices/tmpl_sensor/`（代码样板）
+> 配套：`docs/guides/module-development.md`（流程与原理）、`docs/guides/module-design.md`（契约与差异）、`docs/templates/framework_demo/drivers/devices/tmpl_sensor/`（代码样板）
 > 目标：**四文件 + 四处配置 + 一条 CLI + 一个 host 单测**，全部可验证。
 
 ---
@@ -18,22 +18,22 @@ description: "Use when: 新增一个嵌入式 C 模块——传感器/外设驱�
 
 | 判定 | 类型 | 目标目录 |
 |---|---|---|
-| 直接读写寄存器 / 调 SDK | 总线/资源驱动 | `libs/drivers/bus/<name>/` |
-| 通过抽象总线（i2c/spi/serial）访问器件 | 设备驱动 | `libs/drivers/devices/<name>/` |
-| 纯逻辑（队列、状态机、编码、缓存） | 组件 | `libs/components/<name>/` |
+| 直接读写寄存器 / 调 SDK | 总线/资源驱动 | `framework/drivers/bus/<name>/` |
+| 通过抽象总线（i2c/spi/serial）访问器件 | 设备驱动 | `framework/drivers/devices/<name>/` |
+| 纯逻辑（队列、状态机、编码、缓存） | 组件 | `framework/components/<name>/` |
 | 含业务语义（设备模型、协议、控制策略） | 应用模块 | `projects/<id>/src/<mod>/` |
 
-输出一句话结论，例如：**"这是设备驱动，走抽象 i2c，放 `libs/drivers/devices/<name>/`，不需要新增 port 实现。"**
+输出一句话结论，例如：**"这是设备驱动，走抽象 i2c，放 `framework/drivers/devices/<name>/`，不需要新增 port 实现。"**
 
 ### 2. 复制样板
 
 ```bash
-cp -r docs/templates/project_demo/libs/drivers/devices/tmpl_sensor \
-      <目标工程>/libs/drivers/devices/<name>
+cp -r docs/templates/framework_demo/drivers/devices/tmpl_sensor \
+      framework/drivers/devices/<name>
 ```
 
-> 代码样板只有一份：`docs/templates/project_demo/libs/drivers/devices/tmpl_sensor/`（工程私有库位置）；
-> `tmpl_` 前缀表示它不可被产品直接引用。
+> 代码样板只有一份：`docs/templates/framework_demo/drivers/devices/tmpl_sensor/`。目标是**共享框架** `framework/`，
+> 不是某个工程的目录；`tmpl_` 前缀表示它不可被产品直接引用。
 > 工程层落位参考工程骨架 `docs/templates/project_demo/`：工程只放 `src/config`（逻辑 ID / 容量）、
 > `src/system/board.c`（描述符表）、`src/sacp`（协议）、`test`（单测）。
 
@@ -43,7 +43,7 @@ cp -r docs/templates/project_demo/libs/drivers/devices/tmpl_sensor \
 
 - 纯组件 → 不保留 `cli_<name>.c`
 - 不接协议 → 删 `src/sacp/sacp_<name>.{c,h}`
-- 总线/资源驱动 → 另加 `port/<soc>/soc_<name>.c`
+- 总线/资源驱动 → 另加 `framework/port/<soc>/soc_<name>.c`
 
 ### 3. 定义逻辑 ID
 
@@ -58,7 +58,7 @@ enum EXPORT_<NAME>
 };
 ```
 
-### 4. 写公开头 `include/<name>.h`
+### 4. 写公开头 `<name>.h`
 
 必须包含且**只包含**这些：
 
@@ -92,30 +92,31 @@ enum EXPORT_<NAME>
 
 ### 6. 平台适配（仅总线/资源驱动需要）
 
-- 在 `port/<soc>/` 下新建 `soc_<name>.c`，`#include` 芯片私有头
+- 在 `framework/port/<soc>/` 下新建 `soc_<name>.c`，`#include` 芯片私有头
 - 同时在 `common/soc/soc_<name>.h` 增加**纯声明**接口
-- **每个** `port/<soc>/` 都要实现一遍，否则编译失败（这是刻意的）
+- **每个** `framework/port/<soc>/` 都要实现一遍，否则编译失败（这是刻意的）
 - 设备驱动/组件：**不做这一步**，直接复用现有总线 API
 
 ### 7. 板级实例化（最容易漏，逐条做完）
 
-按 `board/board_fragment.c` 的 5 处粘贴：
+按 `docs/guides/module-design.md` §3 的 5 条清单逐项落地（工程侧）：
 
 ```text
-① config/export_ids.h              逻辑 ID 枚举
-② config/framework_config.h        #define CONFIG_<NAME>_MAX_NUM EXPORT_<NAME>_MAX_NUM
-③ projects/<id>/board/board_*.h    static const <name>Config_t s_xxxs[] = {...}
-                                   + #if ARRAY_SIZE(...) > CONFIG_...  #error
-④ 板级初始化                        调用 <name>Init(s_xxxs, ARRAY_SIZE(s_xxxs))，并检查返回值
-⑤ 其他同步点                        构建清单 / sacp / 文档接口对应表
+① projects/<id>/src/config/export_ids.h          逻辑 ID 枚举 + 哨兵
+② projects/<id>/src/config/framework_config.h    #define CONFIG_<NAME>_MAX_NUM EXPORT_<NAME>_MAX_NUM
+③ projects/<id>/src/system/board.c               static const <name>Config_t s_xxxs[] = {...}
+                                                 + 编译期 typedef 断言（不能用 #if sizeof）
+④ projects/<id>/src/system/board.c               调用 <name>Init(s_xxxs, ARRAY_SIZE(s_xxxs))，并检查返回值
+⑤ 其他同步点                                     构建清单 / sacp / 文档接口对应表
 ```
 
-禁止把引脚、地址、波特率写进 `src/<name>.c` 或 `include/<name>.h`。
+禁止把引脚、地址、波特率写进 `<name>.c` 或 `<name>.h`。
+禁止在工程内建 `framework/` 或 `port/`：驱动与平台后端属于共享框架。
 
 ### 8. 自检 CLI + 协议接入
 
-- `cli/cli_<name>.c`：至少 `list` / `read` / `dump`，有写操作再加 `write|mode`
-- 需要上报/控制 → `sacp/sacp_<name>.c`：属性表（ID 必须升序）+ 写回调 + 上报组 + `sacpXxxInit()` 注册
+- `cli_<name>.c`（与驱动同目录）：至少 `list` / `read` / `dump`，有写操作再加 `write|mode`
+- 需要上报/控制 → `projects/<id>/src/sacp/sacp_<name>.c`：属性表（ID 必须升序）+ 写回调 + 上报组 + `sacpXxxInit()` 注册
 - 属性 ID 同步到 `src/sacp/local_attributes.h`，上报组同步到 `local_groups.h`
 
 ### 9. 单测 + 构建 + 验收

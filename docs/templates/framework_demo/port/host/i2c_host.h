@@ -8,7 +8,7 @@
  * @version 0.1
  * @date 2026-11-02
  *
- * @note 仅供 host 构建与单测使用；目标板由 `port/<soc>/i2c_*.c` 实现同一套接口
+ * @note 仅供 host 构建与单测使用；目标板由 `framework/port/<soc>/i2c_*.c` 实现同一套接口
  */
 
 #include <common/generic.h>

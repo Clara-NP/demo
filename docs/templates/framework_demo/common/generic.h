@@ -15,7 +15,7 @@
  *  不适用
  *
  * @note 本文件是 framework_demo 骨架的一部分：
- *       复制到真实仓库时展开为 `libs/common/generic.h`，此后以 libs 为准
+ *       复制到真实仓库时展开为 `framework/common/generic.h`，此后以 framework 为准
  */
 
 #include <stdbool.h>

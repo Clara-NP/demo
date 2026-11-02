@@ -11,13 +11,15 @@
 |---|---|---|
 | `AGENTS.md` | 环境级硬性约束（常驻上下文） | 平台 |
 | `.github/skills/` | 按需流程（`add-module` 等） | 平台 |
-| `docs/standards/` `docs/guides/` | 规范细则与操作手册（规范类，受 §4 红线约束） | 平台 |
 | `docs/adr/` | 平台级架构决策 | 平台 |
-| `docs/templates/` | 复制源：`framework_demo/`、`project_demo/`；`CMakeLists.txt` 为模板冒烟构建 | 平台 |
 | `docs/design/` `docs/reference/` | 平台总体方案、外部工程分析（**允许**出现工程名/芯片型号示例） | 平台 |
-| `libs/` `port/<soc>/` | 环境层共享库与平台后端位置；**当前为空**（尚无真实共享代码，样板均在 `docs/templates/project_demo/` 内） | 平台 |
+| `docs/guides/` | 模块开发流程与契约（`module-development.md`、`module-design.md`） | 平台 |
+| `docs/templates/` | 复制源：`framework_demo/`、`project_demo/`；`CMakeLists.txt` 为唯一构建入口 | 平台 |
+| `framework/` | 共享框架（`common/`、`osal/`、`drivers/`、`components/`、`port/<soc>/`）；**当前只有占位 README**，代码未落 | 平台 |
 | `tools/` | 环境工具（`check_layers.py` 等） | 平台 |
-| `projects/<id>/` | 具体工程，自包含，可整体删除 | 工程 |
+| `projects/<id>/` | 具体工程：只放产品差异（逻辑 ID、容量、板级表、协议接入、单测），**不建 `framework/` 或 `port/` 副本** | 工程 |
+
+> `docs/standards/` 尚不存在（见 §4）；`framework/` 目前是占位，已存在但未落代码。
 
 ## 2. 快速开始
 
@@ -47,5 +49,6 @@ python3 tools/check_layers.py
 |---|---|
 | 模板冒烟构建 / 单测 | ✅ `docs/templates` 下 2 个目标，9/9 用例通过 |
 | `check_layers.py` | ✅ 通过，但当前扫描 **0 个文件**（样板全在 `docs/templates/`，被 `SKIP_DIRS` 跳过）；规则表待适配 |
-| 共享库 / 平台后端 | ⛔ `libs/`、`port/` 尚未创建；框架骨架在 `docs/templates/framework_demo/`，模块样板在 `docs/templates/project_demo/libs/` |
+| 共享框架 | ⛔ `framework/` 只有占位 README（`framework/README.md`），代码未落；骨架由 `docs/templates/framework_demo/` 展开 |
+| `docs/standards/` | ⛔ 未建（`AGENTS.md`、`module-design.md` 中引用的 `coding-style.md` 等均在等这一步） |
 | `env/presets/`、`.clang-format`、`.githooks/` | ⛔ 未建（`AGENTS.md` §7.1 已标注） |

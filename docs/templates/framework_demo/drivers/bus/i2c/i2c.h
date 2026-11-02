@@ -15,7 +15,7 @@
  *  同一 bus 不保证可重入；调用方需按 bus 串行化
  *
  * @note 本文件是 framework_demo 骨架的一部分：复制到真实仓库时展开为
- *       `libs/drivers/bus/i2c/i2c.h`，实现位于 `port/<soc>/`
+ *       `framework/drivers/bus/i2c/i2c.h`，实现位于 `framework/port/<soc>/`
  */
 
 #include <common/generic.h>

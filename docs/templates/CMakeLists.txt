@@ -1,11 +1,12 @@
 # =============================================================================
 # 模板冒烟构建（smoke）：只为证明"模板代码能过编译器"，不代表产品构建
 # -----------------------------------------------------------------------------
+#   本文件是**唯一且完整**的构建定义：源文件、include 路径、编译选项、测试注册
+#   全部写在这里，**不依赖任何编辑器配置**（不需要 .vscode/settings.json、
+#   也不需要 CMakePresets.json）。
+#
 #   smoke_app  ：框架 + 模块 + 工程 全链路编译链接（不运行，含死循环 main）
 #   smoke_test ：模块纯逻辑单测（自带假总线，不链接 port/host）
-#
-# 本文件放在 docs/templates/ 下：它验证 framework_demo 与 project_demo 两个模板。
-# project_demo 是自包含工程（自带 libs/ 与 port/），与未来 projects/<id>/ 的结构一致。
 #
 # 用法（在仓库根执行）：
 #   cmake -S docs/templates -B build
@@ -23,8 +24,8 @@ enable_testing()
 
 set(PRJ_DIR   ${CMAKE_CURRENT_SOURCE_DIR}/project_demo)
 set(FW_DIR    ${CMAKE_CURRENT_SOURCE_DIR}/framework_demo)
-set(MOD_DIR   ${PRJ_DIR}/libs/drivers/devices/tmpl_sensor)
-set(PORT_DIR  ${PRJ_DIR}/port/host)
+set(MOD_DIR   ${FW_DIR}/drivers/devices/tmpl_sensor)
+set(PORT_DIR  ${FW_DIR}/port/host)
 
 set(HOST_ONLY_DEFS _POSIX_C_SOURCE=199309L)
 

@@ -6,15 +6,15 @@
 
 - [ ] 已判定模块类型：☐ 总线/资源驱动 ☐ 设备驱动 ☐ 组件 ☐ 应用模块
 - [ ] 已确定目标目录，并在回复中说明理由（一句话）
-- [ ] 已 `cp -r docs/templates/project_demo/libs/drivers/devices/tmpl_sensor <目标工程>/libs/drivers/devices/<name>`
+- [ ] 已 `cp -r docs/templates/framework_demo/drivers/devices/tmpl_sensor framework/drivers/devices/<name>`
 - [ ] 已完成四组改名（`tmpl_sensor` / `tmplSensor` / `TMPL_SENSOR` / `tmplsensor`）
 - [ ] 已按类型裁剪（组件去 `cli_`；不接协议删 `src/sacp/sacp_<name>.*`）
 - [ ] 已对照工程骨架 `docs/templates/project_demo/` 确认工程层落位：`src/config` / `src/system/board.c` / `src/sacp` / `test`
 
 ## B. 代码（四文件）
 
-- [ ] `config/export_ids.h` 增加逻辑 ID 枚举 + `EXPORT_<NAME>_MAX_NUM`
-- [ ] `include/<name>.h`
+- [ ] `projects/<id>/src/config/export_ids.h` 增加逻辑 ID 枚举 + `EXPORT_<NAME>_MAX_NUM`
+- [ ] `<name>.h`（公开头，与驱动同目录）
   - [ ] `#ifndef CONFIG_<NAME>_MAX_NUM` 默认值
   - [ ] `enum <NAME>_CHIP` + 哨兵
   - [ ] `<name>Config_t` 描述符
@@ -25,29 +25,29 @@
   - [ ] 芯片分发（`switch (chip)` 或 ops 表）
   - [ ] 无芯片头 / 无 malloc / 无 `rawPrint` / 无 `FreeRTOS.h`
   - [ ] 每个失败分支 `elog` 带 `id` 与 `ret`；无无界等待
-- [ ] `cli/cli_<name>.c`：`list` / `read` / `dump`（+ `write|mode`）
-- [ ] （总线驱动才做）`port/<soc>/soc_<name>.c` + `common/soc/soc_<name>.h`
+- [ ] `cli_<name>.c`（与驱动同目录）：`list` / `read` / `dump`（+ `write|mode`）
+- [ ] （总线驱动才做）`framework/port/<soc>/soc_<name>.c` + `framework/common/soc/soc_<name>.h`
 - [ ] （需要协议时）`sacp/sacp_<name>.c`：属性表升序 + 写回调 + 上报组 + 注册
 
 ## C. 配置同步（最容易漏）
 
-- [ ] `config/framework_config.h`：`#define CONFIG_<NAME>_MAX_NUM EXPORT_<NAME>_MAX_NUM`
-- [ ] 板级头：`static const <name>Config_t s_xxxs[]`（引脚/地址/参数唯一来源）
-- [ ] 板级头：`#if ARRAY_SIZE(s_xxxs) > CONFIG_<NAME>_MAX_NUM  #error`
-- [ ] 板级初始化处调用 `<name>Init()` 并检查返回值（部分失败要 `wlog`）
+- [ ] `projects/<id>/src/config/framework_config.h`：`#define CONFIG_<NAME>_MAX_NUM EXPORT_<NAME>_MAX_NUM`
+- [ ] `projects/<id>/src/system/board.c`：`static const <name>Config_t s_xxxs[]`（引脚/地址/参数唯一来源）
+- [ ] `projects/<id>/src/system/board.c`：编译期 typedef 断言（描述符条数 ≤ `CONFIG_<NAME>_MAX_NUM`）
+- [ ] `projects/<id>/src/system/board.c`：调用 `<name>Init()` 并检查返回值（部分失败要 `wlog`）
 - [ ] `src/sacp/local_attributes.h` / `local_groups.h` / `local_config.h`（如接协议）
 - [ ] 文档：板级接口对应表 / 协议说明（如有）
 
 ## D. 构建
 
-- [ ] CMake：`target_sources` 已加 `src/*.c` 与 `cli/*.c`
-- [ ] CMake：`target_include_directories` 已加 `include/`
+- [ ] CMake：`target_sources` 已加模块目录下全部 `.c`（驱动 + `cli_<name>.c`，模板为扁平目录）
+- [ ] CMake：`target_include_directories` 已加模块目录
 - [ ] CMake：`target_compile_options` 含 `-Werror -Wconversion -Wshadow -Wundef`
 - [ ] Keil（若双轨）：**每个** target 的 Source Group 与 Include Path 已同步
 
 ## E. 测试
 
-- [ ] `tests/test_<name>.c` 覆盖：
+- [ ] `projects/<id>/test/test_<name>.c` 覆盖：
   - [ ] 初始化绑定数量正确
   - [ ] 容量溢出返回 `RET_INVALID_ARGS`
   - [ ] 未注册 ID 返回 `RET_NO_OBJECT`
