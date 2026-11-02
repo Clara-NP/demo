@@ -14,15 +14,16 @@
 - **工程骨架**：演示"模块四文件 + 配置同步 + 自检 CLI + host 单测"在工程内如何落位
 - 首选 **host 构建**（无需硬件），目标板构建后续再补
 
-## 2. 依赖边界（框架库在环境层，工程内不含框架源码）
+## 2. 依赖边界（框架在环境层，工程自带 libs/ 与 port/）
 
-| 依赖 | 位置（从本目录出发） | 说明 |
+| 依赖 | 位置 | 说明 |
 |---|---|---|
-| 框架库 | `../../../libs/` | `common/`（generic、trace）、`drivers/`、`components/`、`osal/` |
-| 平台适配 | `../../../port/<soc>/` | 唯一允许出现芯片头的目录 |
+| 框架骨架 | `../../../docs/templates/framework_demo/`（落地后为环境层 `libs/`） | `common/`、`osal/`、`drivers/bus`、`components/` |
+| 工程私有库 | `libs/` | 本工程的驱动，随工程走 |
+| 平台后端 | `port/<soc>/` | 唯一允许出现芯片头的目录 |
 | 环境工具 | `../../../tools/`、`../../../docs/` | `check_layers.py`、标准与指南 |
 
-**禁止**把 `libs/**` 的源码复制进工程；需要改动就改库层并评估对其他工程的影响。
+**禁止**把框架源码复制进工程；需要改动就改框架层，并评估对所有工程的影响。
 
 ## 3. 本工程目录职责
 
@@ -41,7 +42,7 @@
 
 | 项 | 命令 | 状态 |
 |---|---|---|
-| host 冒烟构建 + 单测 | `cmake -S ../../.. -B ../../../build && cmake --build ../../../build && ctest --test-dir ../../../build` | ✅ 已执行：0 警告，9/9 用例通过 |
+| host 冒烟构建 + 单测 | 在仓库根：`cmake -S docs/templates -B build && cmake --build build && ctest --test-dir build` | ✅ 已执行：0 警告，9/9 用例通过 |
 | 复制后工程构建 | `./build.sh` | ⛔ 需先补工程自身 `CMakeLists.txt` |
 | 分层守护 | `python3 ../../../tools/check_layers.py` | ⛔ 本目录在 `docs/` 下，脚本跳过；复制到 `projects/<id>/` 后才生效 |
 | 格式 | `clang-format --dry-run --Werror` | ⛔ 本地无 `clang-format`、无 `.clang-format` |
@@ -50,6 +51,6 @@
 
 ## 5. 本工程额外禁止
 
-- 在 `src/**` 出现任何芯片厂商头文件、`HAL_`、寄存器名（芯片差异只能进 `../../../port/<soc>/`）
+- 在 `src/**` 出现任何芯片厂商头文件、`HAL_`、寄存器名（芯片差异只能进 `port/<soc>/`）
 - 在 `src/system/board.c` 之外的任何文件写引脚/地址/波特率
 - 为通过编译而临时 `#define` 掉缺失的框架符号

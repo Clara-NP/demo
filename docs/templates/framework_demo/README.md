@@ -3,8 +3,8 @@
 > **用途是把"框架该有哪些目录、每个头提供什么"钉下来**，复制到真实仓库后展开为 `libs/`。
 > 与 `project_demo/` 的分工：`project_demo` 管"一个工程怎么摆"，本目录管"一套框架由什么组成"。
 
-> ✅ **本目录被编译**：根目录 `CMakeLists.txt` 的 `smoke_app` / `smoke_test` 会直接编译这里与
-> `libs/drivers/devices/tmpl_sensor/`、`port/host/`、`project_demo/` 的代码 —— 这是它不会腐烂的唯一保证。
+> ✅ **本目录被编译**：`docs/templates/CMakeLists.txt` 的 `smoke_app` / `smoke_test` 会直接编译这里与
+> `project_demo/libs/`、`project_demo/port/host/`、`project_demo/src/` 的代码 —— 这是它不会腐烂的唯一保证。
 
 ---
 
@@ -33,7 +33,7 @@ docs/templates/framework_demo/
 port/<soc>/os_<soc>.c                  osTickMs / sysTimeStamp
 port/<soc>/i2c_<soc>.c                 i2cReadRegs / i2cWriteRegs / i2cProbe
 port/<soc>/soc_<name>.c                总线/资源驱动的平台实现
-port/host/{os_host.c, i2c_host.c}      本仓用的 host 后端（内存模拟）
+port/host/{os_host.c, i2c_host.c}      参考实现：工程内的 host 后端（见 project_demo/port/host/）
 ```
 
 ## 2. 三条硬约束
@@ -68,12 +68,12 @@ cp -r docs/templates/framework_demo/components  libs/
 
 1. 删除本 README 中"骨架/最小实现"的表述，改为真实版本的说明
 2. 平台后端按 `port/<soc>/` 补齐；缺一个平台就编译失败（这是刻意的）
-3. 把 `check_layers.py` 规则表指向 `libs/`（当前只覆盖 `libs/**` 与 `port/**`）
+3. `check_layers.py` 规则表指向 `libs/`；注意：样板当前全在 `docs/` 下（被 `SKIP_DIRS` 跳过），脚本会扫到 **0 个文件**
 
 ## 5. 验证
 
 ```bash
-cmake -S . -B build
+cmake -S docs/templates -B build     # 在仓库根执行
 cmake --build build              # smoke_app + smoke_test，零警告（-Werror）
 ctest --test-dir build --output-on-failure
 ```

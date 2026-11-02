@@ -1,7 +1,7 @@
 # project_demo —— 新建工程用的骨架
 
 > **用途是复制，不是构建。** 开新工程时 `cp -r docs/templates/project_demo projects/<id>`，再按 §0 改三处。
-> 与代码样板 `libs/drivers/devices/tmpl_sensor/` 配套：样板管"**一个模块**怎么摆"，本目录管"**一个工程**怎么摆"。
+> 本目录是**自包含工程**：模块样板在 `libs/`、平台后端在 `port/`，复制后即为一完整工程。
 
 > ⚠️ **本目录不被验证**：位于 `docs/` 下，不参与任何构建，也不被 `tools/check_layers.py` 扫描
 > （脚本的 `SKIP_DIRS` 含 `docs`）。复制到 `projects/<id>/` 之后才进入守护范围。
@@ -20,7 +20,8 @@
 
 ## 1. 一句话
 
-**模块代码在环境层 `libs/`（所有工程共用），工程目录只放"产品差异"：逻辑 ID、容量、板级表、协议接入、单测。**
+**工程自包含：驱动在 `libs/`、平台后端在 `port/`、产品差异在 `src/`。**
+只有当 ≥2 个工程真正共用同一驱动时，才把它提升到环境层 `libs/`。
 
 ## 2. 目录结构
 
@@ -49,19 +50,14 @@ project_demo/                  （复制后改名为 projects/<id>/）
 │   └── ld/                   链接脚本（占位）
 ├── test/
 │   └── test_tmpl_sensor.c    ⑥ host 单测（自带假总线，零依赖）
+├── libs/
+│   └── drivers/devices/tmpl_sensor/   ⑦ 模块样板：tmpl_sensor.h / .c / cli_tmpl_sensor.c
+├── port/
+│   └── host/                 ⑤ 平台后端：os_host.c / i2c_host.c / soc_tmpl_sensor_stub.c
 └── tools/                    工程级脚本（占位）
 ```
 
-上一层（环境层，所有工程共用，**不要复制进工程**）。从本目录出发的相对路径是 `../../../libs/`：
-
-```text
-libs/drivers/devices/tmpl_sensor/
-├── tmpl_sensor.h             描述符 + 枚举 + API + #ifndef 默认值
-├── tmpl_sensor.c             控制器单例 + 实例数组 + chip 分发
-└── cli_tmpl_sensor.c         自检命令：list / read / mode / dump
-port/host/
-└── soc_tmpl_sensor_stub.c    平台适配（唯一允许芯片头的地方）
-```
+复制后只保留用得到的部分；`libs/` 与 `port/` 随工程走，不是环境层资产。
 
 ## 3. 新增一个模块时按这个顺序填
 
@@ -73,14 +69,14 @@ port/host/
 | ④ 协议配置 | `src/sacp/local_{config,attributes,groups}.h` |
 | ⑤ 协议接入 | `src/sacp/sacp_<name>.{h,c}` |
 | ⑥ 单测 | `test/test_<name>.c` |
-| ⑦ 驱动本体 | `libs/drivers/devices/<name>/`（库层，非本工程） |
+| ⑦ 驱动本体 | `libs/drivers/devices/<name>/`（本工程内） |
 
 ## 4. 构建
 
-模板自身由**仓库根**的 smoke 目标编译（框架头由 `docs/templates/framework_demo/` 提供）：
+模板自身由 `docs/templates/CMakeLists.txt` 的 smoke 目标编译（框架头由 `framework_demo/` 提供），在**仓库根**执行：
 
 ```sh
-cmake -S . -B build && cmake --build build && ctest --test-dir build --output-on-failure
+cmake -S docs/templates -B build && cmake --build build && ctest --test-dir build --output-on-failure
 ```
 
 复制成 `projects/<id>/` 后，`./build.sh` 才是该工程的入口。它目前会快速失败：
@@ -98,9 +94,9 @@ cmake -S . -B build && cmake --build build && ctest --test-dir build --output-on
 
 | 位置 | 回答的问题 | 用在哪 |
 |---|---|---|
-| `libs/drivers/devices/tmpl_sensor/` | **一个模块**怎么写（驱动 + CLI） | `cp -r` 到 `libs/drivers/devices/<name>/` |
-| `port/host/soc_tmpl_sensor_stub.c` | 平台适配怎么写 | `port/<soc>/` |
-| `docs/templates/project_demo/` | **一个工程**怎么组织（ID、容量、板级表、协议接入、单测） | `cp -r` 到 `projects/<id>/` |
+| `libs/drivers/devices/tmpl_sensor/` | **一个模块**怎么写（驱动 + CLI） | 本工程内直接改名复用 |
+| `port/host/soc_tmpl_sensor_stub.c` | 平台适配怎么写 | 目标板时改为 `port/<soc>/` |
+| 本目录整体 | **一个工程**怎么组织（ID、容量、板级表、协议接入、单测） | `cp -r` 到 `projects/<id>/` |
 | `docs/guides/module-design.md` | 依赖假设、错误码、5 处同步清单、构建片段、常见错误 | 直接读，不复制 |
 
 三者不一致时以 `docs/guides/module-development.md` 为准，并同步修正。

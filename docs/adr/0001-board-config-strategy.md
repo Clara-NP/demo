@@ -3,7 +3,7 @@
 - **状态**：Proposed
 - **日期**：2026-10-30
 - **决策范围**：平台层（所有工程适用）
-- **相关**：`docs/guides/module-development.md`、`4x_mcu-framework-analysis.md`
+- **相关**：`docs/guides/module-development.md`、`docs/reference/4x-mcu-framework-analysis.md`
 
 ---
 
@@ -216,7 +216,7 @@ graph LR
 ### 4.2 yaml 形态（示例）
 
 ```yaml
-# projects/001-demo/board/board.yaml
+# projects/<id>/board/board.yaml        示例：路径中的 <id> 为占位
 soc: stm32f407
 resources:
   gpio:

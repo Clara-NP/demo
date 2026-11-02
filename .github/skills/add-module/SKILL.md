@@ -5,7 +5,7 @@ description: "Use when: 新增一个嵌入式 C 模块——传感器/外设驱�
 
 # 新增一个模块（add-module）
 
-> 配套：`docs/guides/module-development.md`（流程与原理）、`docs/guides/module-design.md`（契约与差异）、`libs/drivers/devices/tmpl_sensor/`（代码样板）
+> 配套：`docs/guides/module-development.md`（流程与原理）、`docs/guides/module-design.md`（契约与差异）、`docs/templates/project_demo/libs/drivers/devices/tmpl_sensor/`（代码样板）
 > 目标：**四文件 + 四处配置 + 一条 CLI + 一个 host 单测**，全部可验证。
 
 ---
@@ -28,10 +28,12 @@ description: "Use when: 新增一个嵌入式 C 模块——传感器/外设驱�
 ### 2. 复制样板
 
 ```bash
-cp -r libs/drivers/devices/tmpl_sensor libs/drivers/devices/<name>
+cp -r docs/templates/project_demo/libs/drivers/devices/tmpl_sensor \
+      <目标工程>/libs/drivers/devices/<name>
 ```
 
-> 代码样板只有一份，就在库层（`libs/drivers/devices/tmpl_sensor/`）；`tmpl_` 前缀表示它不可被产品直接引用。
+> 代码样板只有一份：`docs/templates/project_demo/libs/drivers/devices/tmpl_sensor/`（工程私有库位置）；
+> `tmpl_` 前缀表示它不可被产品直接引用。
 > 工程层落位参考工程骨架 `docs/templates/project_demo/`：工程只放 `src/config`（逻辑 ID / 容量）、
 > `src/system/board.c`（描述符表）、`src/sacp`（协议）、`test`（单测）。
 

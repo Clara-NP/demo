@@ -13,12 +13,12 @@
 
 demo 拆成两层落位：
 
-- **库层（框架，所有工程共用，位于上一层）**：`libs/drivers/devices/tmpl_sensor/` + `port/host/`
+- **模块与平台（工程内自带）**：`libs/drivers/devices/tmpl_sensor/` + `port/host/`
 - **工程层（本模板）**：`docs/templates/project_demo/src/{config,system,sacp}` + `test/` + `tools/` + `data/` + `docs/`
 
 > 定位：本目录**只被复制、不被构建**（`docs/` 在 `check_layers.py` 的 `SKIP_DIRS` 内）。
 
-代码样板收敛为**一份**：`libs/drivers/devices/tmpl_sensor/` + `port/host/`；其契约说明见 `docs/guides/module-design.md`。
+代码样板收敛为**一份**：`libs/drivers/devices/tmpl_sensor/` + `port/host/`（均在工程内）；其契约说明见 `docs/guides/module-design.md`。
 
 ## 2. 目录职责
 
@@ -41,7 +41,7 @@ demo 拆成两层落位：
 | 1 | `board_fragment.c` 用 `#if (sizeof(x)/sizeof(x[0])) > CONFIG_...` | 改用编译期 typedef 断言 | `#if` 在预处理阶段不支持 `sizeof`，该写法无法编译 |
 | 2 | `sacp_tmpl_sensor.c` 内联"片段 A"属性枚举 | 枚举移入 `src/sacp/local_attributes.h` | 避免同一号段在多文件重复定义 |
 | 3 | 描述符表在 `projects/<id>/board/*.h`（头文件） | 放 `src/system/board.c`（编译单元内 `static const`） | 本工程只有一份板级实现；避免头文件里定义对象导致重复符号 |
-| 4 | 构建靠 `CMakeLists.txt` 单一源 | 模板不提供工程 `CMakeLists.txt`，`build.sh` 缺文件时快速失败 | 模板自身由根 `CMakeLists.txt` 冒烟编译；工程清单复制后手写，不靠 glob |
+| 4 | 构建靠 `CMakeLists.txt` 单一源 | 模板不提供工程 `CMakeLists.txt`，`build.sh` 缺文件时快速失败 | 模板自身由 `docs/templates/CMakeLists.txt` 冒烟编译；工程清单复制后手写，不靠 glob |
 
 ## 4. 验证状态（如实记录）
 
@@ -55,8 +55,8 @@ demo 拆成两层落位：
 
 ## 5. 后续待办
 
-1. ~~建 `libs/common`、`libs/drivers/bus/i2c`、`libs/components/{console,sacp}` 最小实现~~（已完成：见 `docs/templates/framework_demo/`，由根 `CMakeLists.txt` 冒烟编译）
+1. ~~建 `libs/common`、`libs/drivers/bus/i2c`、`libs/components/{console,sacp}` 最小实现~~（已完成：见 `docs/templates/framework_demo/`，由 `docs/templates/CMakeLists.txt` 冒烟编译）
 2. 复制到 `projects/<id>/` 时补 `CMakeLists.txt`，并把 `build.sh` 换成真实构建+单测
 3. ~~修模板 `#if sizeof`~~（已完成：模板已删除，正确写法在 `src/system/board.c`，契约写入 `docs/guides/module-design.md` §3）
 4. `tools/check_layers.py` 规则表适配 `libs/**` 与 `projects/*/src/**`
-5. ~~加"模板冒烟编译"目标~~（已完成：根 `CMakeLists.txt` 的 `smoke_app` / `smoke_test`）
+5. ~~加"模板冒烟编译"目标~~（已完成：`docs/templates/CMakeLists.txt` 的 `smoke_app` / `smoke_test`）

@@ -21,7 +21,7 @@
  *
  * @par 依赖状态
  *  `sacp/attribute/sacp_attribute.h` 由 `docs/templates/framework_demo/` 提供最小实现，
- *  已由根 `CMakeLists.txt` 的 `smoke_app` 编译验证
+ *  已由 `docs/templates/CMakeLists.txt` 的 `smoke_app` 编译验证
  */
 
 #include <common/generic.h>

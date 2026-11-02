@@ -44,7 +44,8 @@
 - 禁止无超时的等待循环（`while` / 忙等 / 信号量）。
 - 禁止用 `#include "../../..."` 穿越工程边界引用共享代码。
 - 环境层（本文件、`docs/`、`env/`、`tools/`、`.github/`）不得写入具体工程名或芯片型号。
-  验证：`grep -rn "projects/00" docs/ AGENTS.md env/ tools/ | grep -v 示例`
+  - 例外：`docs/design/`（平台方案）与 `docs/reference/`（外部工程分析）**允许**出现示例性质的具体名称，它们不是规范。
+  - 验证：`grep -rn "projects/00" docs/standards docs/guides docs/adr AGENTS.md env/ tools/ .github/ | grep -v 示例`
 
 ## 5. 语言与类型
 
@@ -87,9 +88,11 @@
 
 ## 8. 文档索引
 
-- **新增/修改模块（先读这个）**：`docs/guides/module-development.md`（流程）+ `docs/guides/module-design.md`（契约）；流程化执行用 skill `add-module`；代码样板见 `libs/drivers/devices/tmpl_sensor/`
+- **新增/修改模块（先读这个）**：`docs/guides/module-development.md`（流程）+ `docs/guides/module-design.md`（契约）；流程化执行用 skill `add-module`；代码样板见 `docs/templates/project_demo/libs/drivers/devices/tmpl_sensor/`
 - **模板落地示例（工程层与库层怎么分）**：`docs/templates/project_demo/`（工程骨架，复制用）+ 模块实体在 `libs/drivers/devices/`、平台实现在 `port/`
-- **框架层骨架**：`docs/templates/framework_demo/`（common/osal/drivers/components 的最小实现，由根 `CMakeLists.txt` 冒烟编译）
+- **框架层骨架**：`docs/templates/framework_demo/`（common/osal/drivers/components 的最小实现，由 `docs/templates/CMakeLists.txt` 冒烟编译）
+- **平台总体方案**：`docs/design/platform-plan.md`（分层、约束体系、依赖策略）
+- **外部参考实现分析**：`docs/reference/4x-mcu-framework-analysis.md`（只读笔记，非本仓库规范）
 - 编码细则：`docs/standards/coding-style.md`
 - 错误处理：`docs/standards/error-handling.md`
 - 测试：`docs/standards/testing.md`

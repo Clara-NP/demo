@@ -2,8 +2,8 @@
 
 > 版本：v1.0（2026-10-29）
 > 定位：**平台级流程手册**——规定"新增一个模块要走哪几步、每步的约束是什么、怎么验收"。
-> 来源：整理自内部机器人主控工程（下称"参考实现"）的实际做法；完整对照分析见仓库根目录 `4x_mcu-framework-analysis.md`。
-> 配套资产：`libs/drivers/devices/tmpl_sensor/`（代码样板）、`docs/guides/module-design.md`（契约与差异）、`docs/templates/project_demo/`（工程骨架）、`docs/templates/framework_demo/`（框架骨架）、`.github/skills/add-module/SKILL.md`（流程化执行）。
+> 来源：整理自内部机器人主控工程（下称"参考实现"）的实际做法；完整对照分析见 `docs/reference/4x-mcu-framework-analysis.md`。
+> 配套资产：`docs/templates/project_demo/`（自包含工程骨架 + 模块样板）、`docs/guides/module-design.md`（契约与差异）、`docs/templates/framework_demo/`（框架骨架）、`.github/skills/add-module/SKILL.md`（流程化执行）。
 
 ---
 
@@ -213,27 +213,28 @@ python tools/check_config.py
 
 | 文件 | 对应步骤 | 位置 |
 |---|---|---|
-| `tmpl_sensor.h` | ③ | `libs/drivers/devices/tmpl_sensor/` |
+| `tmpl_sensor.h` | ③ | `docs/templates/project_demo/libs/drivers/devices/tmpl_sensor/` |
 | `tmpl_sensor.c` | ④ | 同上 |
 | `cli_tmpl_sensor.c` | ⑦ | 同上 |
-| `soc_tmpl_sensor_stub.c` | ⑤ | `port/host/` |
+| `soc_tmpl_sensor_stub.c` | ⑤ | `docs/templates/project_demo/port/host/` |
 | `export_ids.h` / `framework_config.h` | ②⑥ | `docs/templates/project_demo/src/config/` |
 | `board.c` | ⑥ | `docs/templates/project_demo/src/system/` |
 | `local_*.h` / `sacp_tmpl_sensor.{c,h}` | ⑧ | `docs/templates/project_demo/src/sacp/` |
 | `test_tmpl_sensor.c` | ⑨ | `docs/templates/project_demo/test/` |
 | 依赖假设 / 错误码 / 5 处同步清单 / 构建片段 / 常见错误 | — | `docs/guides/module-design.md` |
 
-**落位示例**（工程层与库层怎么分）：工程骨架 `docs/templates/project_demo/` 只放产品差异，模块本体仍留在库层。
+**落位示例**：`docs/templates/project_demo/` 是一个**自包含工程**（自带 `libs/` 与 `port/`），
+与未来 `projects/<id>/` 的结构完全一致；只有 ≥2 个工程真正共用时，才把驱动提升到环境层 `libs/`。
 
-| 层 | 位置 | 内容 |
-|---|---|---|
-| 库层（共用） | `libs/drivers/devices/tmpl_sensor/` | `tmpl_sensor.h` / `tmpl_sensor.c` / `cli_tmpl_sensor.c` |
-| 平台层 | `port/<soc>/soc_tmpl_sensor_stub.c` | 唯一允许芯片头的落点 |
-| 工程层 | `src/config/export_ids.h` | 逻辑 ID + `EXPORT_*_MAX_NUM` 哨兵 |
-| 工程层 | `src/config/framework_config.h` | 容量宏由枚举派生 |
-| 工程层 | `src/system/board.c` | 描述符表（引脚/地址唯一来源）+ 编译期容量校验 + `Init` 调用 |
-| 工程层 | `src/sacp/local_{config,attributes,groups,common}.h` + `sacp_<name>.{h,c}` | 协议开关、属性号段、上报组基址、属性表 |
-| 工程层 | `test/test_tmpl_sensor.c` | host 单测 + 假总线 |
+| 位置（在工程内） | 内容 |
+|---|---|
+| `libs/drivers/devices/tmpl_sensor/` | `tmpl_sensor.h` / `tmpl_sensor.c` / `cli_tmpl_sensor.c` |
+| `port/<soc>/soc_tmpl_sensor_stub.c` | 唯一允许芯片头的落点 |
+| `src/config/export_ids.h` | 逻辑 ID + `EXPORT_*_MAX_NUM` 哨兵 |
+| `src/config/framework_config.h` | 容量宏由枚举派生 |
+| `src/system/board.c` | 描述符表（引脚/地址唯一来源）+ 编译期容量校验 + `Init` 调用 |
+| `src/sacp/local_{config,attributes,groups,common}.h` + `sacp_<name>.{h,c}` | 协议开关、属性号段、上报组基址、属性表 |
+| `test/test_tmpl_sensor.c` | host 单测 + 假总线 |
 
 > 与 §2 表格的差异：步骤 ⑥ 的板级描述符表在本示例中落在 `src/system/board.c`（编译单元内 `static const`），
 > 而不是板级头文件 —— 头文件里定义对象会引入重复符号。方案见 `docs/templates/project_demo/docs/design/demo-tmpl-sensor.md`。
@@ -280,8 +281,8 @@ python tools/check_config.py
 
 ## 相关文档
 
-- `libs/drivers/devices/tmpl_sensor/` —— 代码样板（唯一来源）；契约与差异见 `docs/guides/module-design.md`
-- `docs/templates/framework_demo/` —— 框架层骨架（common/osal/drivers/components 最小实现，根 `CMakeLists.txt` 冒烟编译）
+- `docs/templates/project_demo/` —— 自包含工程骨架（含模块样板 `libs/drivers/devices/tmpl_sensor/`）；契约与差异见 `docs/guides/module-design.md`
+- `docs/templates/framework_demo/` —— 框架层骨架（common/osal/drivers/components 最小实现，由 `docs/templates/CMakeLists.txt` 冒烟编译）
 - `.github/skills/add-module/` —— 加模块的可执行流程
-- 仓库根 `4x_mcu-framework-analysis.md` —— 参考实现的整体架构与对照分析
-- 仓库根 `embedded-monorepo-ai-plan.md` —— 环境层设计（分层、约束体系、依赖策略）
+- `docs/reference/4x-mcu-framework-analysis.md` —— 参考实现的整体架构与对照分析
+- `docs/design/platform-plan.md` —— 环境层设计（分层、约束体系、依赖策略）

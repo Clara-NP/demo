@@ -1,25 +1,30 @@
 # =============================================================================
-# host 冒烟构建（smoke）：只为证明"模板代码能过编译器"，不代表产品构建
+# 模板冒烟构建（smoke）：只为证明"模板代码能过编译器"，不代表产品构建
 # -----------------------------------------------------------------------------
 #   smoke_app  ：框架 + 模块 + 工程 全链路编译链接（不运行，含死循环 main）
 #   smoke_test ：模块纯逻辑单测（自带假总线，不链接 port/host）
 #
-# 用法：
-#   cmake -S . -B build && cmake --build build && ctest --test-dir build --output-on-failure
+# 本文件放在 docs/templates/ 下：它验证 framework_demo 与 project_demo 两个模板。
+# project_demo 是自包含工程（自带 libs/ 与 port/），与未来 projects/<id>/ 的结构一致。
+#
+# 用法（在仓库根执行）：
+#   cmake -S docs/templates -B build
+#   cmake --build build
+#   ctest --test-dir build --output-on-failure
 # =============================================================================
 
 cmake_minimum_required(VERSION 3.16)
-project(mcu_host_smoke C)
+project(mcu_templates_smoke C)
 
 set(CMAKE_C_STANDARD 99)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 
 enable_testing()
 
-set(FW_DIR    ${CMAKE_CURRENT_SOURCE_DIR}/docs/templates/framework_demo)
-set(MOD_DIR   ${CMAKE_CURRENT_SOURCE_DIR}/libs/drivers/devices/tmpl_sensor)
-set(PRJ_DIR   ${CMAKE_CURRENT_SOURCE_DIR}/docs/templates/project_demo)
-set(PORT_DIR  ${CMAKE_CURRENT_SOURCE_DIR}/port/host)
+set(PRJ_DIR   ${CMAKE_CURRENT_SOURCE_DIR}/project_demo)
+set(FW_DIR    ${CMAKE_CURRENT_SOURCE_DIR}/framework_demo)
+set(MOD_DIR   ${PRJ_DIR}/libs/drivers/devices/tmpl_sensor)
+set(PORT_DIR  ${PRJ_DIR}/port/host)
 
 set(HOST_ONLY_DEFS _POSIX_C_SOURCE=199309L)
 

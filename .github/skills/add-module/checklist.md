@@ -6,7 +6,7 @@
 
 - [ ] 已判定模块类型：☐ 总线/资源驱动 ☐ 设备驱动 ☐ 组件 ☐ 应用模块
 - [ ] 已确定目标目录，并在回复中说明理由（一句话）
-- [ ] 已 `cp -r libs/drivers/devices/tmpl_sensor libs/drivers/devices/<name>`
+- [ ] 已 `cp -r docs/templates/project_demo/libs/drivers/devices/tmpl_sensor <目标工程>/libs/drivers/devices/<name>`
 - [ ] 已完成四组改名（`tmpl_sensor` / `tmplSensor` / `TMPL_SENSOR` / `tmplsensor`）
 - [ ] 已按类型裁剪（组件去 `cli_`；不接协议删 `src/sacp/sacp_<name>.*`）
 - [ ] 已对照工程骨架 `docs/templates/project_demo/` 确认工程层落位：`src/config` / `src/system/board.c` / `src/sacp` / `test`
