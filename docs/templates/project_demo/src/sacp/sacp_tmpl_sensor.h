@@ -19,28 +19,26 @@
  * @note 必须在 SACP 服务初始化完成之后调用；可重入：否
  * @note 调用上下文：启动阶段（任务创建前）
  */
-void sacpTmplSensorInit(void);
+fw_err_t sacpTmplSensorInit(void);
 
 /**
  * @brief 采样一次并刷新属性值
  *
  * @param[in] id 逻辑 ID
- * @return int
- *  - RET_SUCCESS    成功
- *  - RET_NO_OBJECT  实例不存在
- *  - RET_TIMEOUT    器件无响应
+ * @return fw_err_t
  *
  * @note 调用上下文：任务上下文（建议 100ms 周期）；不要在 ISR 中调用
  */
-int sacpTmplSensorUpdate(uint8_t id);
+fw_err_t sacpTmplSensorUpdate(uint8_t id);
 
 /**
  * @brief 上报属性组
  *
  * @param[in] groupId 上报组 ID，见 `local_groups.h`
  *
+ * @return fw_err_t
  * @note 调用上下文：任务上下文；可重入：否
  */
-void sacpTmplSensorReport(uint8_t groupId);
+fw_err_t sacpTmplSensorReport(uint8_t groupId);
 
 #endif // __SACP_TMPL_SENSOR_H__

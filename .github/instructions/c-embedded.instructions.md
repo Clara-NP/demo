@@ -15,7 +15,7 @@ applyTo: "**/*.{c,h}"
 | `**/*.ld`、**/`startup_*.s` | 禁止修改（链接脚本/启动文件） |
 | HAL / FreeRTOS / CMSIS 等厂商代码 | 一律视为第三方；需要"改行为"就在 `framework/port/<soc>/` 包一层 |
 
-违反即返工；`.githooks/pre-commit` 会拦截。
+违反即返工；`.githooks/pre-commit` 尚未落地，当前由人工评审与显式检查保证。
 
 ## 2. 注释：Doxygen 契约
 
@@ -33,13 +33,13 @@ applyTo: "**/*.{c,h}"
  *
  * @param[in]  id  逻辑 ID
  * @param[out] out 结果输出，不允许为 NULL
- * @return int
- *  - RET_SUCCESS   成功
- *  - RET_NO_OBJECT 实例不存在
+ * @return fw_err_t
+ * @retval FW_OK 成功
+ * @retval FW_ERR_NO_OBJECT 实例不存在
  *
  * @note 调用上下文：任务上下文；可重入：否
  */
-int tmplSensorRead(uint8_t id, tmplSensorData_t *out);
+fw_err_t tmplSensorRead(uint8_t id, tmplSensorData_t *out);
 ```
 
 ## 3. 花括号与排版（由 `.clang-format` 保证，此处说明意图）
@@ -58,6 +58,7 @@ int tmplSensorRead(uint8_t id, tmplSensorData_t *out);
 ## 5. 错误与等待
 
 - 所有返回值必须检查；失败分支 `elog` 带 `id` 与 `ret`。
+- 公开 API 返回 `fw_err_t`；数据与计数通过固定宽度出参返回，不混用正数与错误码。
 - 禁止无超时的 `while` / 忙等 / 信号量等待。
 - 总线失败不得返回陈旧数据（要么错误码，要么本次新数据）。
 

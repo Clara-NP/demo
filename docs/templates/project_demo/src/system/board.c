@@ -74,33 +74,43 @@ typedef char tmplSensorCapacityCheck_t[(TMPL_SENSOR_NUM <= CONFIG_TMPL_SENSOR_MA
  * 初始化
  * ========================================================================== */
 
-int boardTmplSensorInit(void) {
-    int inited = tmplSensorInit(s_tmplSensors, (int)TMPL_SENSOR_NUM);
+fw_err_t boardTmplSensorInit(uint8_t *initializedSensors) {
+    fw_err_t ret;
 
-    if (inited <= 0) {
-        /* 板级失败必须显式记录：不允许"静默少一个传感器" */
-        elog("board: no tmpl sensor initialized, ret:%d", inited);
-        return RET_NO_OBJECT;
+    if (initializedSensors == NULL) {
+        return FW_ERR_INVALID_ARGS;
     }
 
-    if (inited < (int)TMPL_SENSOR_NUM) {
-        wlog("board: only %d/%d tmpl sensors initialized", inited, (int)TMPL_SENSOR_NUM);
+    ret = tmplSensorInit(s_tmplSensors, (uint8_t)TMPL_SENSOR_NUM, initializedSensors);
+    if (ret != FW_OK) {
+        elog("board: no tmpl sensor initialized, ret:%ld", (long)ret);
+        return ret;
     }
 
-    return inited;
+    if (*initializedSensors < (uint8_t)TMPL_SENSOR_NUM) {
+        wlog("board: only %u/%u tmpl sensors initialized", *initializedSensors,
+             (uint8_t)TMPL_SENSOR_NUM);
+    }
+    return FW_OK;
 }
 
-int boardInit(void) {
-    int count = 0;
-    int ret = boardTmplSensorInit();
+fw_err_t boardInit(uint8_t *initializedModules) {
+    uint8_t initializedSensors = 0u;
+    fw_err_t ret;
 
-    if (ret > 0) {
-        count++;
+    if (initializedModules == NULL) {
+        return FW_ERR_INVALID_ARGS;
+    }
+    *initializedModules = 0u;
+
+    ret = boardTmplSensorInit(&initializedSensors);
+    if (ret != FW_OK) {
+        return ret;
     }
 
-    ilog("board init done, modules:%d", count);
-
-    return count;
+    (*initializedModules)++;
+    ilog("board init done, modules:%u", *initializedModules);
+    return FW_OK;
 }
 
 /* ==========================================================================

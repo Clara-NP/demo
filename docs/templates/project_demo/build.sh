@@ -5,7 +5,7 @@
 # @note 模板自身由根目录 CMakeLists 的 smoke 目标编译，不靠本脚本。
 #   本脚本供**复制后的工程**使用；缺 CMakeLists 时快速失败，不给虚假的成功信号。
 #   前置条件：
-#     1) ../../../libs/ 已由 docs/templates/framework_demo/ 展开
+#     1) ../../../framework/ 是共享框架唯一源码
 #     2) 本工程 CMakeLists.txt（复制后补，列出真实源文件，不靠 glob）
 #
 # 用法：./build.sh [clean]

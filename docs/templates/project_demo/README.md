@@ -1,10 +1,10 @@
 # project_demo —— 新建工程用的骨架
 
-> **用途是复制，不是构建。** 开新工程时 `cp -r docs/templates/project_demo projects/<id>`，再按 §0 改三处。
+> **用途是复制，不是独立产品构建。** 开新工程时 `cp -r docs/templates/project_demo projects/<id>`，再按 §0 改三处。
 > 本目录只放**产品差异**；驱动与平台后端在共享框架 `framework/`，**工程内不出现 `framework/` 或 `port/` 副本**。
 
-> ⚠️ **本目录不被验证**：位于 `docs/` 下，不参与任何构建，也不被 `tools/check_layers.py` 扫描
-> （脚本的 `SKIP_DIRS` 含 `docs`）。复制到 `projects/<id>/` 之后才进入守护范围。
+> 本目录的源码由 `docs/templates/CMakeLists.txt` 参与 host smoke，但位于 `docs/` 下，
+> 不被 `tools/check_layers.py` 扫描；复制到 `projects/<id>/` 后才进入分层守护范围。
 
 ---
 
@@ -54,7 +54,7 @@ project_demo/                  （复制后改名为 projects/<id>/）
 └── tools/                    工程级脚本（占位）
 ```
 
-驱动（`tmpl_sensor`）与平台后端（`port/host`）不在本目录，见 `../framework_demo/`。
+驱动（`tmpl_sensor`）与平台后端（`port/host`）不在本目录，见仓库根 `framework/`。
 
 ## 3. 新增一个模块时按这个顺序填
 
@@ -70,7 +70,7 @@ project_demo/                  （复制后改名为 projects/<id>/）
 
 ## 4. 构建
 
-模板自身由 `docs/templates/CMakeLists.txt` 的 smoke 目标编译（框架头由 `framework_demo/` 提供），在**仓库根**执行：
+模板自身由 `docs/templates/CMakeLists.txt` 的 smoke 目标编译（直接链接根 `framework/`），在**仓库根**执行：
 
 ```sh
 cmake -S docs/templates -B build && cmake --build build && ctest --test-dir build --output-on-failure
@@ -91,13 +91,12 @@ cmake -S docs/templates -B build && cmake --build build && ctest --test-dir buil
 
 | 位置 | 回答的问题 | 用在哪 |
 |---|---|---|
-| `../framework_demo/drivers/devices/tmpl_sensor/` | **一个模块**怎么写（驱动 + CLI） | `cp -r` 到 `framework/drivers/devices/<name>/` |
-| `../framework_demo/port/host/` | 平台适配怎么写 | 目标板时改为 `framework/port/<soc>/` |
+| `framework/drivers/devices/tmpl_sensor/` | **一个模块**怎么写（驱动 + CLI） | `cp -r` 到 `framework/drivers/devices/<name>/` |
+| `framework/port/host/` | 平台适配怎么写 | 目标板时改为 `framework/port/<soc>/` |
 | 本目录整体 | **一个工程**怎么组织（ID、容量、板级表、协议接入、单测） | `cp -r` 到 `projects/<id>/` |
 | `docs/guides/module-design.md` | 依赖假设、错误码、5 处同步清单、构建片段、常见错误 | 直接读，不复制 |
 
 三者不一致时以 `docs/guides/module-development.md` 为准，并同步修正。
 
-> 已知代价：`docs/` 下的模板既不编译也不被扫描，会随框架演进腐烂
-> （原 `docs/templates/module/board/board_fragment.c` 的 `#if sizeof` 就是这么被发现的，该目录已删除、结论并入 `module-design.md`）。
-> 彻底解决需要"模板冒烟编译"目标；在此之前，改模板后请人工核对一次语法。
+> 已知边界：模板源码会被 smoke 编译，但不会被分层脚本扫描；复制到产品工程后必须重新运行
+> `check_layers.py`。

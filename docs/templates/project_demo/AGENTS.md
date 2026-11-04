@@ -18,8 +18,8 @@
 
 | 依赖 | 位置（从本目录出发） | 说明 |
 |---|---|---|
-| 框架库 | `../../../framework/`（模板期：`../../../docs/templates/framework_demo/`） | `common/`、`osal/`、`drivers/`、`components/` |
-| 平台后端 | `../../../framework/port/<soc>/`（模板期：`.../framework_demo/port/<soc>/`） | 唯一允许出现芯片头的目录 |
+| 框架库 | `../../../framework/` | `common/`、`osal/`、`drivers/`、`components/` 的唯一源码 |
+| 平台后端 | `../../../framework/port/<soc>/` | 唯一允许出现芯片头的目录 |
 | 环境工具 | `../../../tools/`、`../../../docs/` | `check_layers.py`、标准与指南 |
 
 **工程内不得出现 `framework/` 或 `port/` 副本**：驱动与平台后端只改框架侧，并评估对所有工程的影响。
@@ -44,7 +44,7 @@
 | host 冒烟构建 + 单测 | 在仓库根：`cmake -S docs/templates -B build && cmake --build build && ctest --test-dir build` | ✅ 已执行：0 警告，9/9 用例通过 |
 | 复制后工程构建 | `./build.sh` | ⛔ 需先补工程自身 `CMakeLists.txt` |
 | 分层守护 | `python3 ../../../tools/check_layers.py` | ⛔ 本目录在 `docs/` 下，脚本跳过；复制到 `projects/<id>/` 后才生效 |
-| 格式 | `clang-format --dry-run --Werror` | ⛔ 本地无 `clang-format`、无 `.clang-format` |
+| 格式 | 在仓库根对改动 C/H 运行 `clang-format --dry-run --Werror` | ✅ 根配置与工具已就绪 |
 
 > 未实际执行的项，汇报时必须写"未验证"，不得写"已完成"。
 

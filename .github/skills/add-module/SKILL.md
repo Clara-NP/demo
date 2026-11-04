@@ -5,7 +5,7 @@ description: "Use when: 新增一个嵌入式 C 模块——传感器/外设驱�
 
 # 新增一个模块（add-module）
 
-> 配套：`docs/guides/module-development.md`（流程与原理）、`docs/guides/module-design.md`（契约与差异）、`docs/templates/framework_demo/drivers/devices/tmpl_sensor/`（代码样板）
+> 配套：`docs/guides/module-development.md`（流程与原理）、`docs/guides/module-design.md`（契约与差异）、`framework/drivers/devices/tmpl_sensor/`（golden example）
 > 目标：**四文件 + 四处配置 + 一条 CLI + 一个 host 单测**，全部可验证。
 
 ---
@@ -28,11 +28,11 @@ description: "Use when: 新增一个嵌入式 C 模块——传感器/外设驱�
 ### 2. 复制样板
 
 ```bash
-cp -r docs/templates/framework_demo/drivers/devices/tmpl_sensor \
+cp -r framework/drivers/devices/tmpl_sensor \
       framework/drivers/devices/<name>
 ```
 
-> 代码样板只有一份：`docs/templates/framework_demo/drivers/devices/tmpl_sensor/`。目标是**共享框架** `framework/`，
+> 代码样板只有一份：`framework/drivers/devices/tmpl_sensor/`。它位于**共享框架** `framework/`，
 > 不是某个工程的目录；`tmpl_` 前缀表示它不可被产品直接引用。
 > 工程层落位参考工程骨架 `docs/templates/project_demo/`：工程只放 `src/config`（逻辑 ID / 容量）、
 > `src/system/board.c`（描述符表）、`src/sacp`（协议）、`test`（单测）。
@@ -66,7 +66,7 @@ enum EXPORT_<NAME>
 2. `#ifndef CONFIG_<NAME>_MAX_NUM` 默认值
 3. `enum <NAME>_CHIP`（芯片/载体类型）+ 哨兵
 4. `<name>Config_t` 描述符（`id` / `chip` / `bus|port` / 地址 / `flags` / `chipParameter`）
-5. 对外 API —— **第一参数一律 `uint8_t id`**
+5. 对外 API —— **第一参数一律 `uint8_t id`**，返回 `fw_err_t`；数据/计数走固定宽度出参
 6. 每个 API 的 Doxygen：`@brief @param @return` + **调用上下文（ISR/任务）+ 可重入性**
 
 ### 5. 写实现 `src/<name>.c`
@@ -106,7 +106,7 @@ enum EXPORT_<NAME>
 ② projects/<id>/src/config/framework_config.h    #define CONFIG_<NAME>_MAX_NUM EXPORT_<NAME>_MAX_NUM
 ③ projects/<id>/src/system/board.c               static const <name>Config_t s_xxxs[] = {...}
                                                  + 编译期 typedef 断言（不能用 #if sizeof）
-④ projects/<id>/src/system/board.c               调用 <name>Init(s_xxxs, ARRAY_SIZE(s_xxxs))，并检查返回值
+④ projects/<id>/src/system/board.c               调用 <name>Init(..., &count)，检查 fw_err_t 与出参
 ⑤ 其他同步点                                     构建清单 / sacp / 文档接口对应表
 ```
 
@@ -122,19 +122,20 @@ enum EXPORT_<NAME>
 ### 9. 单测 + 构建 + 验收
 
 ```bash
-# host 单测（假总线，不接硬件）
-cmake --preset host && ctest --preset host -R <name>
-
-# 目标板编译，零警告
-cmake --build --preset <board>
+# 当前 host smoke（假总线，不接硬件）
+cmake -S docs/templates -B build
+cmake --build build
+ctest --test-dir build --output-on-failure
 
 # 分层与配置守护
-python tools/check_layers.py
-python tools/check_config.py
+python3 -m unittest discover -s tools/tests
+python3 tools/check_layers.py --verbose
 
 # 风格
 clang-format --dry-run --Werror <模块目录>
 ```
+
+> `cmake --preset host`、目标板 preset 与 `tools/check_config.py` 尚未落地，不得写成已验证。
 
 Keil 双轨并存时，按 `CMakeLists.txt` 末尾清单逐 target 勾选源文件。
 
@@ -168,7 +169,8 @@ Keil 双轨并存时，按 `CMakeLists.txt` 末尾清单逐 target 勾选源文�
 验证：
   - host 单测：<x>/<y> 通过
   - 目标板编译：0 warning
-  - check_layers / check_config：通过
+  - check_layers：通过（扫描 <n> 个文件）
+  - check_config：基础设施未建，未执行
 遗留：
   - <chipParameter 弱类型等已知项，如无则写"无">
 ```

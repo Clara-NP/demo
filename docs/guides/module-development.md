@@ -3,7 +3,9 @@
 > 版本：v1.0（2026-10-29）
 > 定位：**平台级流程手册**——规定"新增一个模块要走哪几步、每步的约束是什么、怎么验收"。
 > 来源：整理自内部机器人主控工程（下称"参考实现"）的实际做法；完整对照分析见 `docs/reference/4x-mcu-framework-analysis.md`。
-> 配套资产：`docs/templates/project_demo/`（工程骨架：只含产品差异）、`docs/templates/framework_demo/`（框架骨架：含示例驱动与平台后端）、`docs/guides/module-design.md`（契约与差异）、`.github/skills/add-module/SKILL.md`（流程化执行）。
+> 配套资产：`docs/templates/project_demo/`（工程复制源）、`framework/`（唯一共享源码与
+> golden example）、`docs/guides/module-design.md`（契约与差异）、
+> `.github/skills/add-module/SKILL.md`（流程化执行）。
 
 ---
 
@@ -191,19 +193,19 @@ tmplSensorRead(SENSOR_PRESSURE, &data);
 ### 5.2 完成标准（可执行）
 
 ```bash
-# 1) 编译零警告
-cmake --build --preset <board>          # 或 Keil 编译目标
-# 2) host 单测通过
-ctest --preset host
-# 3) 分层守护：驱动/业务层不得出现芯片头
-python tools/check_layers.py
-# 4) 编码风格
-clang-format --dry-run --Werror framework projects
-# 5) 配置一致性：描述符条数 ≤ 容量宏 ≤ 导出枚举
-python tools/check_config.py
+# 1) 当前 host smoke 与单测
+cmake -S docs/templates -B build
+cmake --build build
+ctest --test-dir build --output-on-failure
+# 2) 分层守护及其行为测试
+python3 -m unittest discover -s tools/tests
+python3 tools/check_layers.py --verbose
+# 3) 编码风格
+clang-format --dry-run --Werror <改动过的 .c/.h>
 ```
 
-任一条不过 = 未完成，**不允许"先合并后补"**。
+任一条不过 = 未完成，**不允许“先合并后补”**。目标板 preset 与
+`tools/check_config.py` 尚未落地，汇报时必须明确写“未验证/未执行”。
 
 ---
 
@@ -213,10 +215,10 @@ python tools/check_config.py
 
 | 文件 | 对应步骤 | 位置 |
 |---|---|---|
-| `tmpl_sensor.h` | ③ | `docs/templates/framework_demo/drivers/devices/tmpl_sensor/` |
+| `tmpl_sensor.h` | ③ | `framework/drivers/devices/tmpl_sensor/` |
 | `tmpl_sensor.c` | ④ | 同上 |
 | `cli_tmpl_sensor.c` | ⑦ | 同上 |
-| `soc_tmpl_sensor_stub.c` | ⑤ | `docs/templates/framework_demo/port/host/` |
+| `soc_tmpl_sensor_stub.c` | ⑤ | `framework/port/host/` |
 | `export_ids.h` / `framework_config.h` | ②⑥ | `docs/templates/project_demo/src/config/` |
 | `board.c` | ⑥ | `docs/templates/project_demo/src/system/` |
 | `local_*.h` / `sacp_tmpl_sensor.{c,h}` | ⑧ | `docs/templates/project_demo/src/sacp/` |
@@ -273,7 +275,7 @@ python tools/check_config.py
 | 5 | **无 host 单测，只有上板 CLI** | 重构无回归保护；AI 无法自闭环 | 每次改动靠人肉回归 | 抽出"纯逻辑部分"编译到 x86 + Unity；HAL 适配层用**一致性测试**替代覆盖率 |
 | 6 | **无静态检查门禁** | 仅有一份文字编码规范 | 规范不可执行 ≈ 不存在 | `.clang-format` + `.clang-tidy` + `-Werror -Wconversion`；规范文档只作解释 |
 | 7 | **无架构守护脚本** | 分层靠约定俗成 | 半年后必然出现业务层 include 芯片头 | `tools/check_layers.py`（正则扫 include），进 pre-commit + CI |
-| 8 | **`id` 越界只在运行期检查** | `instanceFromId()` 返回 `NULL` | 空指针风险 | 关键路径加 `assert(id < MAX)`；对外 API 统一 `if (id >= MAX) return RET_INVALID_ARGS;` |
+| 8 | **`id` 越界只在运行期检查** | `instanceFromId()` 返回 `NULL` | 空指针风险 | 对外 API 统一校验并返回 `FW_ERR_INVALID_ARGS` |
 | 9 | **模块注册靠 `main.c` 逐条调用** | 新增模块要改 `main.c` | 容易漏、合并冲突集中 | 模块数 >20 时用 linker section 自动注册；否则维持显式调用（更直观，别过度设计） |
 | 10 | **无版本化接口** | 驱动接口变更靠全仓同步修改 | 多工程并行时互相拖累 | 接口结构体加 `abi_version`（学 CMSIS-Driver 的 `GetVersion`） |
 
@@ -281,8 +283,8 @@ python tools/check_config.py
 
 ## 相关文档
 
-- `docs/templates/project_demo/` —— 工程骨架（只含产品差异）；模块样板在 `docs/templates/framework_demo/drivers/devices/tmpl_sensor/`；契约与差异见 `docs/guides/module-design.md`
-- `docs/templates/framework_demo/` —— 框架层骨架（common/osal/drivers/components 最小实现，由 `docs/templates/CMakeLists.txt` 冒烟编译）
+- `docs/templates/project_demo/` —— 工程骨架（只含产品差异）
+- `framework/drivers/devices/tmpl_sensor/` —— 模块 golden example；由 smoke 直接编译
 - `.github/skills/add-module/` —— 加模块的可执行流程
 - `docs/reference/4x-mcu-framework-analysis.md` —— 参考实现的整体架构与对照分析
 - `docs/design/platform-plan.md` —— 环境层设计（分层、约束体系、依赖策略）

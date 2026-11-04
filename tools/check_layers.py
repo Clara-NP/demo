@@ -12,7 +12,7 @@
     python tools/check_layers.py --list-rules
 
 退出码：
-    0 = 通过；1 = 发现违规；2 = 用法/环境错误
+    0 = 通过；1 = 发现违规；2 = 用法/环境错误或没有可扫描源码
 
 豁免：在违规行尾加注释 `// layer-allow: <原因>` 即可放行（须说明原因，评审可见）。
 """
@@ -133,19 +133,19 @@ def include_matches(inc: str, patterns: list[str]) -> bool:
     return False
 
 
-def iter_sources() -> list[Path]:
+def iter_sources(root: Path = ROOT) -> list[Path]:
     files: list[Path] = []
-    for path in ROOT.rglob("*"):
+    for path in root.rglob("*"):
         if not path.is_file() or path.suffix not in {".c", ".h"}:
             continue
-        if any(part in SKIP_DIRS for part in path.relative_to(ROOT).parts):
+        if any(part in SKIP_DIRS for part in path.relative_to(root).parts):
             continue
         files.append(path)
     return sorted(files)
 
 
-def check_file(path: Path) -> list[tuple[str, int, str, str]]:
-    rel = path.relative_to(ROOT).as_posix()
+def check_file(path: Path, root: Path = ROOT) -> list[tuple[str, int, str, str]]:
+    rel = path.relative_to(root).as_posix()
     violations: list[tuple[str, int, str, str]] = []
     try:
         lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
@@ -174,6 +174,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="分层 include 架构守护")
     parser.add_argument("--verbose", action="store_true", help="打印扫描文件数")
     parser.add_argument("--list-rules", action="store_true", help="列出规则后退出")
+    parser.add_argument("--root", type=Path, default=ROOT, help="扫描根目录（默认仓库根）")
     args = parser.parse_args()
 
     if args.list_rules:
@@ -181,17 +182,22 @@ def main() -> int:
             print(f"- {name}\n    作用路径: {', '.join(paths)}\n    禁止: {', '.join(forbids)}")
         return 0
 
-    if not ROOT.is_dir():
-        print(f"! 仓库根不存在: {ROOT}", file=sys.stderr)
+    root = args.root.resolve()
+    if not root.is_dir():
+        print(f"! 扫描根不存在: {root}", file=sys.stderr)
         return 2
 
-    sources = iter_sources()
+    sources = iter_sources(root)
     if args.verbose:
         print(f"扫描 {len(sources)} 个 .c/.h 文件（跳过第三方/生成物/模板）")
 
+    if not sources:
+        print("! 分层检查失败：扫描范围内没有 .c/.h 文件，不能把空输入视为通过。", file=sys.stderr)
+        return 2
+
     by_rule: dict[str, list[tuple[str, int, str]]] = {}
     for path in sources:
-        for name, lineno, inc, rel in check_file(path):
+        for name, lineno, inc, rel in check_file(path, root):
             by_rule.setdefault(name, []).append((rel, lineno, inc))
 
     if not by_rule:

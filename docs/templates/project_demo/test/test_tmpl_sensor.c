@@ -11,7 +11,8 @@
  *  - 本文件自带假总线（mock），不依赖任何芯片
  *
  * @par 编译
- *  make host 或 cmake --preset host && ctest --preset host
+ *  cmake -S docs/templates -B build && cmake --build build &&
+ *  ctest --test-dir build --output-on-failure
  */
 
 #include <stdio.h>
@@ -53,15 +54,14 @@ static int s_failures = 0;
 
 /// 由测试预设的"器件返回值"
 typedef struct {
-    int readRet; /* 0 = 成功 */
+    fw_err_t readRet;
     uint8_t regs[8]; /* 从 TMPL_REG_STATUS 起始的内容 */
-    int writeCount;
-    int lastMode;
+    uint32_t writeCount;
 } fakeBus_t;
 
 static fakeBus_t s_fake;
 
-int i2cWriteRegs(uint8_t bus, uint16_t addr, uint8_t reg, const uint8_t *buf, uint16_t len) {
+fw_err_t i2cWriteRegs(uint8_t bus, uint16_t addr, uint8_t reg, const uint8_t *buf, uint16_t len) {
     (void)bus;
     (void)addr;
     (void)reg;
@@ -73,25 +73,29 @@ int i2cWriteRegs(uint8_t bus, uint16_t addr, uint8_t reg, const uint8_t *buf, ui
     return s_fake.readRet;
 }
 
-int i2cReadRegs(uint8_t bus, uint16_t addr, uint8_t reg, uint8_t *buf, uint16_t len) {
+fw_err_t i2cReadRegs(uint8_t bus, uint16_t addr, uint8_t reg, uint8_t *buf, uint16_t len) {
     (void)bus;
     (void)addr;
 
-    if ((s_fake.readRet != 0) || (buf == NULL)) {
-        return -1;
+    if ((s_fake.readRet != FW_OK) || (buf == NULL)) {
+        return s_fake.readRet;
     }
 
     for (uint16_t i = 0; i < len; i++) {
         buf[i] = s_fake.regs[reg + i];
     }
 
-    return 0;
+    return FW_OK;
 }
 
-uint32_t osTickMs(void) {
+fw_err_t osTickMs(uint32_t *tickMs) {
     static uint32_t tick = 0;
 
-    return tick++;
+    if (tickMs == NULL) {
+        return FW_ERR_INVALID_ARGS;
+    }
+    *tickMs = tick++;
+    return FW_OK;
 }
 
 /* ==========================================================================
@@ -122,17 +126,20 @@ static const tmplSensorConfig_t s_cfgs[] = {
 
 static void setUp(void) {
     memset(&s_fake, 0, sizeof(s_fake));
-    s_fake.readRet = 0;
+    s_fake.readRet = FW_OK;
 }
 
 /**
  * 场景：正常初始化两份描述符 → 返回数量与实例数一致
  */
 static void test_init_binds_instances(void) {
-    int n = tmplSensorInit(s_cfgs, 2);
+    uint8_t initialized = 0u;
+    uint8_t count = 0u;
 
-    CHECK_EQ(2, n);
-    CHECK_EQ(2, tmplSensorGetCount());
+    CHECK_EQ(FW_OK, tmplSensorInit(s_cfgs, 2u, &initialized));
+    CHECK_EQ(2, initialized);
+    CHECK_EQ(FW_OK, tmplSensorGetCount(&count));
+    CHECK_EQ(2, count);
 }
 
 /**
@@ -140,14 +147,17 @@ static void test_init_binds_instances(void) {
  */
 static void test_init_rejects_overflow(void) {
     tmplSensorConfig_t many[CONFIG_TMPL_SENSOR_MAX_NUM + 1];
+    uint8_t initialized = 0xffu;
 
     memset(many, 0, sizeof(many));
-    for (int i = 0; i <= CONFIG_TMPL_SENSOR_MAX_NUM; i++) {
-        many[i].id = (uint8_t)i;
+    for (uint8_t i = 0u; i <= CONFIG_TMPL_SENSOR_MAX_NUM; i++) {
+        many[i].id = i;
         many[i].chip = TMPL_SENSOR_CHIP_A;
     }
 
-    CHECK_EQ(RET_INVALID_ARGS, tmplSensorInit(many, CONFIG_TMPL_SENSOR_MAX_NUM + 1));
+    CHECK_EQ(FW_ERR_INVALID_ARGS,
+             tmplSensorInit(many, (uint8_t)(CONFIG_TMPL_SENSOR_MAX_NUM + 1), &initialized));
+    CHECK_EQ(0, initialized);
 }
 
 /**
@@ -155,6 +165,8 @@ static void test_init_rejects_overflow(void) {
  */
 static void test_init_skips_duplicate_id(void) {
     tmplSensorConfig_t dup[2];
+    uint8_t initialized = 0u;
+    uint8_t count = 0u;
 
     memset(dup, 0, sizeof(dup));
     dup[0].id = 7;
@@ -162,19 +174,24 @@ static void test_init_skips_duplicate_id(void) {
     dup[1].id = 7;
     dup[1].chip = TMPL_SENSOR_CHIP_A;
 
-    CHECK_EQ(1, tmplSensorInit(dup, 2));
-    CHECK_EQ(1, tmplSensorGetCount());
+    CHECK_EQ(FW_OK, tmplSensorInit(dup, 2u, &initialized));
+    CHECK_EQ(1, initialized);
+    CHECK_EQ(FW_OK, tmplSensorGetCount(&count));
+    CHECK_EQ(1, count);
 }
 
 /**
- * 场景：读未注册的 ID → RET_NO_OBJECT，而不是崩溃
+ * 场景：读未注册的 ID → FW_ERR_NO_OBJECT，而不是崩溃
  */
 static void test_read_unknown_id_returns_no_object(void) {
     tmplSensorData_t data;
+    uint8_t initialized = 0u;
 
-    tmplSensorInit(s_cfgs, 1);
+    memset(&data, 0x5A, sizeof(data));
+    CHECK_EQ(FW_OK, tmplSensorInit(s_cfgs, 1u, &initialized));
 
-    CHECK_EQ(RET_NO_OBJECT, tmplSensorRead(99, &data));
+    CHECK_EQ(FW_ERR_NO_OBJECT, tmplSensorRead(99u, &data));
+    CHECK_EQ(0x5A5A5A5A, data.value);
 }
 
 /**
@@ -183,14 +200,15 @@ static void test_read_unknown_id_returns_no_object(void) {
  */
 static void test_chip_a_read_applies_scale(void) {
     tmplSensorData_t data;
+    uint8_t initialized = 0u;
 
-    tmplSensorInit(s_cfgs, 1);
+    CHECK_EQ(FW_OK, tmplSensorInit(s_cfgs, 1u, &initialized));
 
     s_fake.regs[0] = 0x00; /* status */
     s_fake.regs[1] = 0x04; /* value H */
     s_fake.regs[2] = 0xD2; /* value L  => 1234 */
 
-    CHECK_EQ(RET_SUCCESS, tmplSensorRead(TEST_ID_A, &data));
+    CHECK_EQ(FW_OK, tmplSensorRead(TEST_ID_A, &data));
     CHECK_EQ(123, data.value);
     CHECK_EQ(0, data.status);
     CHECK_EQ(1, data.sequence);
@@ -201,15 +219,16 @@ static void test_chip_a_read_applies_scale(void) {
  */
 static void test_chip_b_read_applies_invert(void) {
     tmplSensorData_t data;
+    uint8_t initialized = 0u;
 
-    tmplSensorInit(s_cfgs, 2);
+    CHECK_EQ(FW_OK, tmplSensorInit(s_cfgs, 2u, &initialized));
 
     s_fake.regs[2] = 0x00; /* value H */
     s_fake.regs[3] = 0x64; /* value L  => 100 */
     s_fake.regs[4] = 0x01; /* temp H */
     s_fake.regs[5] = 0x2C; /* temp L   => 300 (30.0℃) */
 
-    CHECK_EQ(RET_SUCCESS, tmplSensorRead(TEST_ID_B, &data));
+    CHECK_EQ(FW_OK, tmplSensorRead(TEST_ID_B, &data));
     CHECK_EQ(-100, data.value);
     CHECK_EQ(300, data.temperature);
 }
@@ -219,21 +238,32 @@ static void test_chip_b_read_applies_invert(void) {
  */
 static void test_read_maps_bus_error(void) {
     tmplSensorData_t data;
+    uint8_t initialized = 0u;
 
-    tmplSensorInit(s_cfgs, 1);
-    s_fake.readRet = -1;
+    memset(&data, 0x5A, sizeof(data));
+    CHECK_EQ(FW_OK, tmplSensorInit(s_cfgs, 1u, &initialized));
+    s_fake.readRet = FW_ERR_TIMEOUT;
 
-    CHECK_EQ(RET_TIMEOUT, tmplSensorRead(TEST_ID_A, &data));
+    CHECK_EQ(FW_ERR_TIMEOUT, tmplSensorRead(TEST_ID_A, &data));
+    CHECK_EQ(0x5A5A5A5A, data.value);
+
+    s_fake.readRet = FW_OK;
+    s_fake.regs[0] = 0x00;
+    s_fake.regs[1] = 0x04;
+    s_fake.regs[2] = 0xD2;
+    CHECK_EQ(FW_OK, tmplSensorRead(TEST_ID_A, &data));
+    CHECK_EQ(1, data.sequence);
 }
 
 /**
  * 场景：型号 A 不支持周期模式
  */
 static void test_mode_not_supported(void) {
-    tmplSensorInit(s_cfgs, 1);
+    uint8_t initialized = 0u;
 
-    CHECK_EQ(RET_NOT_SUPPORT, tmplSensorSetMode(TEST_ID_A, TMPL_SENSOR_MODE_AUTO_100MS));
-    CHECK_EQ(RET_SUCCESS, tmplSensorSetMode(TEST_ID_A, TMPL_SENSOR_MODE_SINGLE));
+    CHECK_EQ(FW_OK, tmplSensorInit(s_cfgs, 1u, &initialized));
+    CHECK_EQ(FW_ERR_NOT_SUPPORTED, tmplSensorSetMode(TEST_ID_A, TMPL_SENSOR_MODE_AUTO_100MS));
+    CHECK_EQ(FW_OK, tmplSensorSetMode(TEST_ID_A, TMPL_SENSOR_MODE_SINGLE));
 }
 
 /**
@@ -241,14 +271,16 @@ static void test_mode_not_supported(void) {
  */
 static void test_get_id_by_index(void) {
     uint8_t id = 0xff;
+    uint8_t initialized = 0u;
 
-    tmplSensorInit(s_cfgs, 2);
+    CHECK_EQ(FW_OK, tmplSensorInit(s_cfgs, 2u, &initialized));
 
-    CHECK_EQ(RET_SUCCESS, tmplSensorGetIdByIndex(0, &id));
+    CHECK_EQ(FW_OK, tmplSensorGetIdByIndex(0u, &id));
     CHECK_EQ(TEST_ID_A, id);
-    CHECK_EQ(RET_SUCCESS, tmplSensorGetIdByIndex(1, &id));
+    CHECK_EQ(FW_OK, tmplSensorGetIdByIndex(1u, &id));
     CHECK_EQ(TEST_ID_B, id);
-    CHECK_EQ(RET_NO_OBJECT, tmplSensorGetIdByIndex(2, &id));
+    CHECK_EQ(FW_ERR_NO_OBJECT, tmplSensorGetIdByIndex(2u, &id));
+    CHECK_EQ(TEST_ID_B, id);
 }
 
 /* ==========================================================================

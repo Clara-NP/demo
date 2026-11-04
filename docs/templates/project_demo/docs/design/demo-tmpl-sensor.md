@@ -1,11 +1,15 @@
+---
+status: approved
+task: demo-tmpl-sensor
+date: 2026-11-02
+scope: project-template
+---
+
 # 设计：project_demo 工程骨架与 demo 落位
 
-- **status**: approved
-- **date**: 2026-11-02
-- **rev**: 2（2026-11-02）目录由仓库根 `999_test_temp/` 迁至 `docs/templates/project_demo/`，定位改为"复制用骨架"
-- **rev**: 3（2026-11-02）`docs/templates/module/` 已删除（与本节内容 90% 重复且不被验证），说明并入 `docs/guides/module-design.md`
-- **task**: 把满分模块 demo 按工程目录结构落位成"开新工程时的参考骨架"
-- **scope**: 只落目录结构与文档；**不新建框架子集代码，不声称编译通过**
+> 任务：把完整模块 demo 按工程目录结构落位成“开新工程时的参考骨架”。
+> 修订：目录迁入 `docs/templates/project_demo/`；旧 `docs/templates/module/` 说明并入
+> `docs/guides/module-design.md`。
 
 ---
 
@@ -13,20 +17,21 @@
 
 demo 拆成两层落位：
 
-- **框架（所有工程共用一份，位于环境层）**：`framework/drivers/devices/tmpl_sensor/` + `framework/port/host/`
-  （模板期地址：`docs/templates/framework_demo/drivers/devices/tmpl_sensor/`、`.../framework_demo/port/host/`）
+- **框架（所有工程共用一份，位于环境层）**：`framework/drivers/devices/tmpl_sensor/` +
+  `framework/port/host/`
 - **工程层（本模板）**：`src/{config,system,sacp}` + `test/` + `tools/` + `data/` + `docs/`
 
 > 定位：本目录**只被复制、不被构建**（`docs/` 在 `check_layers.py` 的 `SKIP_DIRS` 内）。
 
-代码样板收敛为**一份**：`framework_demo/drivers/devices/tmpl_sensor/` + `framework_demo/port/host/`；其契约说明见 `docs/guides/module-design.md`。
+代码样板收敛为**一份**：`framework/drivers/devices/tmpl_sensor/` +
+`framework/port/host/`；其契约说明见 `docs/guides/module-design.md`。
 
 ## 2. 目录职责
 
 | 路径 | 职责 | 内容来源 |
 |---|---|---|
-| `framework_demo/drivers/devices/tmpl_sensor/` | 设备驱动：描述符解析、实例数组、chip 分发、自检 CLI | 模板 `include/` + `src/` + `cli/` |
-| `framework_demo/port/host/soc_tmpl_sensor_stub.c` | 平台适配（唯一允许芯片头的地方） | 模板 `port/` |
+| `framework/drivers/devices/tmpl_sensor/` | 设备驱动：描述符解析、实例数组、chip 分发、自检 CLI | 共享框架 golden example |
+| `framework/port/host/soc_tmpl_sensor_stub.c` | 平台适配（唯一允许芯片头的地方） | 共享框架 host port |
 | `src/config/export_ids.h` | 逻辑 ID + 哨兵 | 模板 `board_fragment.c` 片段 1 |
 | `src/config/framework_config.h` | 容量宏派生 | 片段 2 |
 | `src/system/board.{h,c}` | 描述符表 + 编译期校验 + 初始化 | 片段 3、4 |
@@ -51,12 +56,12 @@ demo 拆成两层落位：
 | 目录结构与文档 | ✅ 已完成 |
 | `cmake` 构建（smoke_app + smoke_test） | ✅ 已执行：`-Wall -Wextra -Werror -Wconversion -Wshadow -Wundef` 零警告 |
 | host 单测 | ✅ 已执行：9/9 用例通过（`ctest`） |
-| `python3 tools/check_layers.py` | ✅ 已执行：通过（7 个文件；本目录在 `docs/` 下不在扫描范围） |
-| `clang-format` | ⛔ 未执行：本地无 `clang-format`，且 `.clang-format` 未建 |
+| `python3 tools/check_layers.py` | ✅ 已执行：扫描真实 `framework/`；本模板因位于 `docs/` 不在扫描范围 |
+| `clang-format` | ✅ 根 `.clang-format` 与工具已就绪 |
 
 ## 5. 后续待办
 
-1. ~~建 `framework/common`、`framework/drivers/bus/i2c`、`framework/components/{console,sacp}` 最小实现~~（已完成：见 `docs/templates/framework_demo/`，由 `docs/templates/CMakeLists.txt` 冒烟编译）
+1. ~~建 `framework/common`、`framework/drivers/bus/i2c`、`framework/components/{console,sacp}` 最小实现~~（已完成：位于唯一源码 `framework/`，由 `docs/templates/CMakeLists.txt` 冒烟编译）
 2. 复制到 `projects/<id>/` 时补 `CMakeLists.txt`，并把 `build.sh` 换成真实构建+单测
 3. ~~修模板 `#if sizeof`~~（已完成：模板已删除，正确写法在 `src/system/board.c`，契约写入 `docs/guides/module-design.md` §3）
 4. `tools/check_layers.py` 规则表适配 `framework/**` 与 `projects/*/src/**`

@@ -14,12 +14,12 @@
 | `docs/adr/` | 平台级架构决策 | 平台 |
 | `docs/design/` `docs/reference/` | 平台总体方案、外部工程分析（**允许**出现工程名/芯片型号示例） | 平台 |
 | `docs/guides/` | 模块开发流程与契约（`module-development.md`、`module-design.md`） | 平台 |
-| `docs/templates/` | 复制源：`framework_demo/`、`project_demo/`；`CMakeLists.txt` 为唯一构建入口 | 平台 |
-| `framework/` | 共享框架（`common/`、`osal/`、`drivers/`、`components/`、`port/<soc>/`）；**当前只有占位 README**，代码未落 | 平台 |
+| `docs/templates/` | 复制源：`project_demo/`；`framework_demo/` 只保留脚手架说明；`CMakeLists.txt` 为 smoke 入口 | 平台 |
+| `framework/` | 共享框架唯一源码（`common/`、`osal/`、`drivers/`、`components/`、`port/<soc>/`） | 平台 |
 | `tools/` | 环境工具（`check_layers.py` 等） | 平台 |
 | `projects/<id>/` | 具体工程：只放产品差异（逻辑 ID、容量、板级表、协议接入、单测），**不建 `framework/` 或 `port/` 副本** | 工程 |
 
-> `docs/standards/` 尚不存在（见 §4）；`framework/` 目前是占位，已存在但未落代码。
+> `docs/standards/` 尚不存在（见 §4）；当前尚无 `projects/<id>/` 产品工程。
 
 ## 2. 快速开始
 
@@ -31,9 +31,11 @@ python3 tools/check_env.py       # 同上，只读检查；CI 可用（--strict 
 cmake -S docs/templates -B build
 cmake --build build              # smoke_app + smoke_test，零警告（-Werror）
 ctest --test-dir build --output-on-failure
+python3 -m unittest discover -s tools/tests
 
 # 格式 / 分层
-clang-format --dry-run --Werror $(git ls-files 'framework/**' 'projects/**' 'docs/templates/**' | grep -E '\.(c|h)$')
+clang-format --dry-run --Werror $(git ls-files --cached --others --exclude-standard \
+  'framework/**' 'projects/**' 'docs/templates/**' | grep -E '\.(c|h)$')
 python3 tools/check_layers.py
 ```
 
@@ -43,7 +45,7 @@ python3 tools/check_layers.py
 |---|---|
 | 新增一个驱动 / 组件 / 协议属性 | `.github/skills/add-module/SKILL.md`（流程）+ `docs/guides/module-design.md`（契约） |
 | 新建一个工程 | `cp -r docs/templates/project_demo projects/<id>`，见该目录 `README.md` §0 |
-| 给框架加一类东西 | `docs/templates/framework_demo/README.md` |
+| 给框架加一类东西 | `framework/README.md` + `.github/skills/add-module/SKILL.md` |
 | 了解平台为什么这样分层 | `docs/design/platform-plan.md`、`docs/adr/` |
 | 看参考实现怎么做的 | `docs/reference/4x-mcu-framework-analysis.md` |
 
@@ -52,9 +54,9 @@ python3 tools/check_layers.py
 | 项 | 状态 |
 |---|---|
 | 模板冒烟构建 / 单测 | ✅ `docs/templates` 下 2 个目标，9/9 用例通过 |
-| `check_layers.py` | ✅ 通过，但当前扫描 **0 个文件**（样板全在 `docs/templates/`，被 `SKIP_DIRS` 跳过）；规则表待适配 |
-| 共享框架 | ⛔ `framework/` 只有占位 README（`framework/README.md`），代码未落；骨架由 `docs/templates/framework_demo/` 展开 |
+| `check_layers.py` | ✅ 扫描真实 `framework/**`；空扫描会失败；行为测试 4 项 |
+| 共享框架 | ✅ `framework/` 为唯一源码，host smoke 直接链接；`framework_demo` 无代码镜像 |
 | `docs/standards/` | ⛔ 未建（`AGENTS.md`、`module-design.md` 中引用的 `coding-style.md` 等均在等这一步） |
 | 代码风格配置 | ✅ `.clang-format` + `clang-format 18.1.3`，模板代码已格式化（`--dry-run --Werror` 通过） |
 | 环境自检 | ✅ `tools/check_env.py` / `tools/bootstrap.sh`；可选工具缺 ninja、doxygen、arm-none-eabi-gcc |
-| `env/presets/`、`.clang-format`、`.githooks/` | ⛔ 未建（`AGENTS.md` §7.1 已标注） |
+| `env/presets/`、`.githooks/` | ⛔ 未建（`AGENTS.md` §7.1 已标注） |

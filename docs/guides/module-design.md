@@ -14,7 +14,7 @@
 
 | 原模板文件 | 现存同源位置 | 比对结果 |
 |---|---|---|
-| `include/tmpl_sensor.h` | `docs/templates/framework_demo/drivers/devices/tmpl_sensor/` | 完全相同 |
+| `include/tmpl_sensor.h` | `framework/drivers/devices/tmpl_sensor/` | 已迁入唯一共享源码 |
 | `src/tmpl_sensor.c` | 同上 | 完全相同 |
 | `cli/cli_tmpl_sensor.c` | 同上 | 完全相同 |
 | `tests/test_tmpl_sensor.c` | `docs/templates/project_demo/test/` | 完全相同 |
@@ -30,17 +30,17 @@
 
 | 角色 | 位置 | 说明 |
 |---|---|---|
-| 公开头 | `docs/templates/framework_demo/drivers/devices/tmpl_sensor/tmpl_sensor.h` | 描述符 + 枚举 + API + `#ifndef` 默认值 |
+| 公开头 | `framework/drivers/devices/tmpl_sensor/tmpl_sensor.h` | 描述符 + 枚举 + API + `#ifndef` 默认值 |
 | 实现 | `.../tmpl_sensor.c` | 控制器单例 + 实例数组 + chip 分发 |
 | 自检 CLI | `.../cli_tmpl_sensor.c` | `list / read / mode / dump` |
-| 平台适配 | `docs/templates/framework_demo/port/host/soc_tmpl_sensor_stub.c` | 唯一允许芯片头的落点 |
+| 平台适配 | `framework/port/host/soc_tmpl_sensor_stub.c` | 唯一允许芯片头的落点 |
 | 工程侧 | `docs/templates/project_demo/src/{config,system,sacp}` | 逻辑 ID、容量、板级表、协议接入 |
 | 单测 | `docs/templates/project_demo/test/test_tmpl_sensor.c` | host 单测 + 假总线 |
 
 新增模块（目标是共享框架，不是某个工程）：
 
 ```bash
-cp -r docs/templates/framework_demo/drivers/devices/tmpl_sensor \
+cp -r framework/drivers/devices/tmpl_sensor \
       framework/drivers/devices/<name>
 # 四组改名：tmpl_sensor→<name>、tmplSensor→<name>驼峰、TMPL_SENSOR→<NAME>、tmplsensor→<name>
 ```
@@ -50,29 +50,32 @@ cp -r docs/templates/framework_demo/drivers/devices/tmpl_sensor \
 ## 2. 依赖假设与错误码
 
 模块按"抽象接口"编写，假设环境提供以下内容（名字不同则按实际调整，**不得因此引入芯片头**）。
-这些头已在 `docs/templates/framework_demo/` 提供最小实现，并由 `docs/templates/CMakeLists.txt` 的 `smoke_app` / `smoke_test` 编译验证：
+这些头由唯一源码 `framework/` 提供，并由 `docs/templates/CMakeLists.txt` 的
+`smoke_app` / `smoke_test` 编译验证：
 
 | 依赖 | 用途 | 期望形态 |
 |---|---|---|
-| `common/generic.h` | 固定宽度类型、`ARRAY_SIZE`、`handle_t`、错误码 `RET_*` | 平台公共头 |
+| `common/generic.h` | 固定宽度类型、`ARRAY_SIZE`、`handle_t`、`fw_err_t` | 平台公共头 |
 | `common/trace.h` | `elog/wlog/ilog/dlog`，按 `TRACE_TAG` / `TRACE_LEVEL` 裁剪 | 需支持 host（打印到 stdout） |
 | `i2c/i2c.h` | `i2cReadRegs` / `i2cWriteRegs`（总线抽象，无芯片符号） | 总线驱动公开头 |
-| `osal` | `osTickMs()` | OSAL |
+| `osal` | `osTickMs(&tick)` | OSAL |
 | `console/command.h` | `CMD_DEFINE(name, brief, usage)` + `argc/argv` + `rawPrint` | 组件 |
 | `sacp/attribute/sacp_attribute.h` | `LOCAL_V32_TABLE` / `LOCAL_GROUP_DEFINE` / `attributeGroupRegister` 等 | 组件 |
 | C 标准 | **C99**（`for (int i = ...)`、`bool`、`//` 注释） | 编译选项 |
 
-错误码约定（建议固化到 `common/generic.h`）：
+错误码约定（已固化到 `framework/common/generic.h`）：
 
 ```c
-#define RET_SUCCESS         0
-#define RET_FAILED         -1
-#define RET_NO_OBJECT      -2     /* 实例/对象不存在 */
-#define RET_INVALID_ARGS   -3     /* 参数非法 */
-#define RET_NOT_SUPPORT    -4     /* 当前芯片/型号不支持 */
-#define RET_TIMEOUT        -5     /* 超时 */
-#define RET_TYPE_MISMATCH  -6
+typedef int32_t fw_err_t;
+#define FW_OK                ((fw_err_t)0)
+#define FW_ERR_FAILED        ((fw_err_t)-1)
+#define FW_ERR_NO_OBJECT     ((fw_err_t)-2)
+#define FW_ERR_INVALID_ARGS  ((fw_err_t)-3)
+#define FW_ERR_NOT_SUPPORTED ((fw_err_t)-4)
+#define FW_ERR_TIMEOUT       ((fw_err_t)-5)
 ```
+
+公开 API 只返回状态；数据和计数使用固定宽度出参。CLI handler 与标准 `main()` 的退出码除外。
 
 ## 3. 新增模块的 5 处同步清单
 
@@ -144,11 +147,11 @@ Keil 双轨并存时逐 target 勾选：`<name>.c`、`cli_<name>.c`、Include Pa
 | 只有第一个设备能用 | 描述符 `id` 重复 | 检查 `export_ids.h` 与板级表 |
 | 读到全 0 | 容量宏小于描述符条数（断言被绕过） | 保持编译期断言 |
 | 换板后某实例失效 | 引脚/地址写在驱动里 | 移到板级描述符表 |
-| 编译报 `RET_*` 未定义 | 环境 `generic.h` 未提供统一错误码 | 按 §2 补齐 |
+| 编译报 `FW_ERR_*` 未定义 | 未依赖 `framework/common/generic.h` | 修正公共头依赖 |
 | 编译报 `sizeof` 不能用在 `#if` 中 | 容量校验写成了 `#if` | 按 §3 改 typedef 断言 |
 
 ## 7. 遗留
 
-1. ~~`framework/common`、`framework/drivers/bus/i2c`、`framework/components/{console,sacp}` 未提供~~（已完成：`docs/templates/framework_demo/` 最小实现，`smoke_app` 编译通过、`smoke_test` 9/9 用例通过）
+1. ~~`framework/common`、`framework/drivers/bus/i2c`、`framework/components/{console,sacp}` 未提供~~（已完成：真实源码位于 `framework/`，`smoke_app` 编译通过、`smoke_test` 9/9 用例通过）
 2. ~~样板无冒烟编译目标~~（已完成：`docs/templates/CMakeLists.txt` 含 `smoke_app` / `smoke_test`）
 3. 历史分析文档（`docs/reference/4x-mcu-framework-analysis.md`、`docs/design/platform-plan.md`）中"在 `docs/templates/module/` 放满分模块"属**当时的方案快照**，不再代表当前结构，未回改

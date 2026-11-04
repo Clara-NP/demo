@@ -1,9 +1,9 @@
-# `framework/` —— 共享框架（唯一一份，所有工程共用）
+# `framework/` —— 共享框架（唯一源码，所有工程共用）
 
-> **当前状态：占位目录，尚未落代码。**
-> 框架的具体写法还没定稿；骨架参考 `docs/templates/framework_demo/`，定稿后再展开到这里。
+> **当前状态：已展开并由 host smoke 构建验证。**
+> `docs/templates/framework_demo/` 只保留脚手架说明，不保存本目录的代码副本。
 
-## 计划结构
+## 当前结构
 
 ```text
 framework/
@@ -25,13 +25,17 @@ framework/
 | 所有工程共用这一份，**工程内不得出现 `framework/` 或 `port/` 副本** | 各存一份必然分叉，改一处崩一片 |
 | 平台差异只允许出现在 `port/<soc>/` | 换芯片只改这一层 |
 | 除 `port/<soc>/` 外，任何文件不得 `#include` 芯片厂商头 / RTOS 头 | 分层守护 `tools/check_layers.py` |
-| 本目录不是模板：**不要**从 `docs/templates/` 再复制一份进来 | 模板只用于展开与参考 |
+| 本目录是代码唯一来源；禁止向 `framework_demo` 复制镜像 | 防止双真源漂移 |
+| 公开 API 返回 `fw_err_t`；数据和计数走固定宽度出参 | 状态与数据不混用 |
 
-## 展开方式（框架写法定稿后）
+## 验证
 
 ```bash
-cp -r docs/templates/framework_demo/. framework/     # 覆盖本 README 之外的骨架内容
-python3 tools/check_layers.py                        # 展开后才真正扫到框架代码
+cmake -S docs/templates -B build
+cmake --build build
+ctest --test-dir build --output-on-failure
+python3 tools/check_layers.py --verbose
 ```
 
-> 展开前不构建是正常状态：模板的冒烟构建（`cmake -S docs/templates -B build`）已经验证代码可编译。
+`tmpl_sensor` 是 golden example，不是产品器件名；产品不得直接依赖它。新增模块时按
+`.github/skills/add-module/SKILL.md` 复制并完成重命名。

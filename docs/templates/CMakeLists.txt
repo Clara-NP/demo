@@ -5,7 +5,7 @@
 #   全部写在这里，**不依赖任何编辑器配置**（不需要 .vscode/settings.json、
 #   也不需要 CMakePresets.json）。
 #
-#   smoke_app  ：框架 + 模块 + 工程 全链路编译链接（不运行，含死循环 main）
+#   smoke_app  ：框架 + 模块 + 工程 全链路编译链接（启动后立即返回）
 #   smoke_test ：模块纯逻辑单测（自带假总线，不链接 port/host）
 #
 # 用法（在仓库根执行）：
@@ -22,8 +22,9 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 
 enable_testing()
 
+set(REPO_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/../..)
 set(PRJ_DIR   ${CMAKE_CURRENT_SOURCE_DIR}/project_demo)
-set(FW_DIR    ${CMAKE_CURRENT_SOURCE_DIR}/framework_demo)
+set(FW_DIR    ${REPO_ROOT}/framework)
 set(MOD_DIR   ${FW_DIR}/drivers/devices/tmpl_sensor)
 set(PORT_DIR  ${FW_DIR}/port/host)
 
