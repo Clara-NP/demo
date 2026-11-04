@@ -1,0 +1,36 @@
+# =============================================================================
+# project.yaml —— 工程的机器可读单一事实来源（模板）
+# -----------------------------------------------------------------------------
+# 复制 project_demo 到 projects/<id>/ 后，先把 id/name/soc/presets 改成本工程的。
+#
+# 只放"从代码推不出来、但要机器读"的元信息。以下内容**不放**在这里：
+#   - 引脚 / 器件地址 / 波特率  → src/system/board.c（描述符表）
+#   - 属性 ID                   → src/sacp/local_attributes.h
+#   - 源文件清单                 → CMakeLists.txt
+#   - 版本号                     → version.h / CHANGELOG.md
+# =============================================================================
+
+# 必填：必须与目录名一致（projects/<id>/）
+id: project_demo
+name: 示例工程
+
+# 芯片/平台：host 表示只在主机上构建与单测
+soc: stm32f446
+
+# 工具链文件（相对仓库根）；host 构建填 null
+toolchain: null
+
+# CMakePresets.json 里的 preset 名；未建 presets 时保持 null
+presets:
+  host: null
+  board: null
+
+# 共享框架位置（相对仓库根，所有工程同一份；工程内不得有自己的 framework/ 或 port/）
+framework:
+  path: framework
+  port: port
+
+# 可选：仅在"不同工程需要不同框架版本"时才启用，见 docs/design/platform-plan.md §1.7
+# deps:
+#   - fw://crc16@v1.2.0
+deps: []
