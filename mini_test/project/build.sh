@@ -39,4 +39,4 @@ cmake -S "$ROOT_DIR" -B "$BUILD_DIR" \
 cmake --build "$BUILD_DIR" --parallel
 
 echo "artifacts:"
-ls -l "$BUILD_DIR/mini_test.elf" "$BUILD_DIR/mini_test.bin"
+ls -l "$BUILD_DIR"/*.elf "$BUILD_DIR"/*.bin
