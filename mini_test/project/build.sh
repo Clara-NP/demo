@@ -74,8 +74,9 @@ SOC_UPPER=$(printf '%s' "$SOC" | tr '[:lower:]' '[:upper:]')
 
 case "$SOC_LOWER" in
     stm32f4*)
-        PLATFORM_DIR="$FRAMEWORK_DIR/platform/stm32/stm32f4xx"
-        # CMSIS 设备宏：stm32f446 → STM32F446xx。F1、GD 以后在这里加自己的目录。
+        # 系列目录由 platform/stm32/platform.cmake 按 SOC_DEVICE 选择。
+        PLATFORM_DIR="$FRAMEWORK_DIR/platform/stm32"
+        # CMSIS 设备宏：stm32f446 → STM32F446xx。F1 以后在这里加分支。
         SOC_DEVICE="${SOC_UPPER}xx"
         ;;
     *)

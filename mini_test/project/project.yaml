@@ -17,7 +17,7 @@ id: mini_test
 name: mini_test
 
 # 具体芯片。启动文件 startup_<soc>xx.s，默认链接脚本 <SOC>XX_FLASH.ld。
-# STM32F4 的平台代码不按型号拆，共用 platform/stm32/stm32f4xx。
+# STM32 入口是 platform/stm32。F4/F1 由 SOC_DEVICE 选子目录。
 soc: stm32f446
 
 # 工具链文件（相对仓库根）；host 构建填 null
@@ -33,7 +33,7 @@ presets:
   board: null
 
 # 测试期框架在本目录旁的 mini_test/framework，不使用仓库根 framework。
-# 平台实现在 framework/platform/<系列>/<系列>xx/，不另设 port 目录。
+# 平台实现在 framework/platform/stm32，系列子目录由 SOC_DEVICE 选择。
 framework:
   path: mini_test/framework
 

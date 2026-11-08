@@ -1,29 +1,27 @@
-# STM32F4 系列共用这一份。具体芯片由 SOC_DEVICE、startup 与 ld 区分。
+# STM32F4 系列的厂商库。具体芯片由 SOC_DEVICE、startup 与 ld 区分。
 
 set(PLATFORM_CPU_OPTS
     -mcpu=cortex-m4
     -mthumb
 )
+set(PLATFORM_CPU_OPTS ${PLATFORM_CPU_OPTS} PARENT_SCOPE)
 
-set(PLATFORM_INC_DIRS
-    ${CMAKE_CURRENT_LIST_DIR}/..
-)
-
-set(PLATFORM_C_SOURCES
-    ${CMAKE_CURRENT_LIST_DIR}/../platform_private.c
+set(PLATFORM_FAMILY_C_SOURCES
     ${CMAKE_CURRENT_LIST_DIR}/system_clock_config.c
-    ${CMAKE_CURRENT_LIST_DIR}/../sys_tick.c
 )
+set(PLATFORM_FAMILY_C_SOURCES ${PLATFORM_FAMILY_C_SOURCES} PARENT_SCOPE)
 
-if(NOT SOC_DEVICE)
-    message(FATAL_ERROR "缺少 SOC_DEVICE，请用 ./build.sh 构建")
-endif()
+set(PLATFORM_FAMILY_INC_DIRS
+    ${CMAKE_CURRENT_LIST_DIR}
+)
+set(PLATFORM_FAMILY_INC_DIRS ${PLATFORM_FAMILY_INC_DIRS} PARENT_SCOPE)
 
 set(HAL_ROOT ${CMAKE_CURRENT_LIST_DIR}/../../../third/STM32F4xx_HAL)
 set(HAL_SRC ${HAL_ROOT}/STM32F4xx_HAL_Driver/Src)
 
 # 厂商代码单独成库，不套用工程的 -Werror。
 set(PLATFORM_LIB stm32f4_hal)
+set(PLATFORM_LIB ${PLATFORM_LIB} PARENT_SCOPE)
 add_library(${PLATFORM_LIB} STATIC
     ${HAL_SRC}/stm32f4xx_hal.c
     ${HAL_SRC}/stm32f4xx_hal_cortex.c
@@ -37,7 +35,6 @@ add_library(${PLATFORM_LIB} STATIC
     ${HAL_SRC}/stm32f4xx_hal_dma.c
     ${HAL_SRC}/stm32f4xx_hal_exti.c
     ${HAL_ROOT}/CMSIS/Device/ST/STM32F4xx/Source/Templates/system_stm32f4xx.c
-    # F4 的 LL 整套源文件，不按工程用到的外设增减。
     ${HAL_SRC}/stm32f4xx_ll_adc.c
     ${HAL_SRC}/stm32f4xx_ll_crc.c
     ${HAL_SRC}/stm32f4xx_ll_dac.c
