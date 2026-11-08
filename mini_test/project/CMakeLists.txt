@@ -2,8 +2,8 @@
 
 cmake_minimum_required(VERSION 3.16)
 
-if(NOT PROJECT_ID OR NOT PLATFORM_DIR OR NOT STARTUP_FILE OR NOT LD_SCRIPT)
-    message(FATAL_ERROR "缺少 PROJECT_ID、PLATFORM_DIR、STARTUP_FILE 或 LD_SCRIPT，请用 ./build.sh 构建")
+if(NOT PROJECT_ID OR NOT PLATFORM_DIR OR NOT STARTUP_FILE OR NOT LD_SCRIPT OR NOT SOC_DEVICE)
+    message(FATAL_ERROR "缺少 PROJECT_ID、PLATFORM_DIR、STARTUP_FILE、LD_SCRIPT 或 SOC_DEVICE，请用 ./build.sh 构建")
 endif()
 
 # 编译工具链。必须位于 project() 之前。
@@ -40,8 +40,12 @@ if(NOT EXISTS "${LD_SCRIPT}")
     message(FATAL_ERROR "链接脚本不存在: ${LD_SCRIPT}")
 endif()
 
-# 编译宏（-D）。当前没有；需要时写成 NAME 或 NAME=value。
+# 编译宏（-D）。写成 NAME 或 NAME=value。时钟按
+# 板上的 8 MHz 外部晶振  CONFIG_STM32_HSE_8M
+# 没有外部晶振时         CONFIG_STM32_HSI_16M
 set(COMPILE_DEFS
+    CONFIG_STM32_HSE_8M
+    CONFIG_STM32_HAL_ENABLE
 )
 
 # 编译参数。CPU 参数来自平台，编译和链接使用同一组。
@@ -58,16 +62,16 @@ set(COMPILE_OPTS
     ${WARN_OPTS}
     -ffunction-sections
     -fdata-sections
-    -ffreestanding
 )
 
 # 链接参数。
 set(LINK_OPTS
     ${PLATFORM_CPU_OPTS}
     -T${LD_SCRIPT}
-    -nostdlib
+    -specs=nano.specs
     -Wl,--gc-sections
     -Wl,--print-memory-usage
+    -Wl,--no-warn-rwx-segments
     -Wl,-Map=${PROJECT_NAME}.map
 )
 
@@ -90,6 +94,10 @@ endif()
 target_compile_options(${PROJECT_NAME} PRIVATE ${COMPILE_OPTS})
 
 set_target_properties(${PROJECT_NAME} PROPERTIES SUFFIX ".elf")
+
+if(PLATFORM_LIB)
+    target_link_libraries(${PROJECT_NAME} PRIVATE ${PLATFORM_LIB})
+endif()
 
 target_link_options(${PROJECT_NAME} PRIVATE ${LINK_OPTS})
 

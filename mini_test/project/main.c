@@ -18,6 +18,56 @@
 // #include <stdio.h>
 // #define BLINK_PERIOD_MS 500u
 
+#include "platform.h"
+
+
+static void startTask(void *parameter)
+{
+    (void)parameter;
+
+    // ilog("=============================");
+    // ilog("=  SBL bring-up %-12s =", SBL_BOARD_NAME);
+    // ilog("=============================");
+
+    // consoleInit();
+
+    // boardInit();
+    // (void)sblConfigLoad();
+    // gpsTimeInit();
+    // pwmChirpInit();
+    // hydroRxInit();
+    // txVoltageInit();
+    // sblEventLogInit();
+    // sblEventLog(SBL_EVT_BOOT, NULL);
+    // if (sblConfigState() == SBL_CFG_DEGRADED) {
+    //     sblEventLog(SBL_EVT_CFG, "degraded");
+    // } else {
+    //     sblEventLog(SBL_EVT_CFG, "ready");
+    // }
+    // if (!sdMounted(STORAGE_TF)) {
+    //     sblEventLog(SBL_EVT_SD, "timeout");
+    // }
+    // sblEventLogPoll();
+    // addCommand(CMD(reset));
+    // addCommand(CMD(i2c));
+    // addCommand(CMD(sd));
+    // addCommand(CMD(cfg));
+    // addCommand(CMD(txv));
+    // addCommand(CMD(chirp));
+    // addCommand(CMD(rx));
+    // oledSensorInit();
+    // depthSensorInit();
+    // ledFlash(LED_SYS, sblConfigGet()->ledPattern, 0xffu);
+    // ilog("led flash started, id=%d pattern=0x%02x",
+    //      LED_SYS, (unsigned)sblConfigGet()->ledPattern);
+
+    // xTaskCreate(taskFramework, "fwk", 512, NULL, CONFIG_FRAMEWORK_TASK_PRIORITY, NULL);
+    // vTaskDelete(NULL);
+}
+
+
+#define NULL 0
+
 int main(void) {
     // fw_err_t err;
 
@@ -38,5 +88,13 @@ int main(void) {
     // }
 
     // printf("hello world!");
+
+    /// 平台初始化
+    platformInit();
+
+    /// 板级初始化
+    startTask(NULL);
+
+    /// 主循环
     for(;;);
 }

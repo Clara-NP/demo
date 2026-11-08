@@ -75,6 +75,8 @@ SOC_UPPER=$(printf '%s' "$SOC" | tr '[:lower:]' '[:upper:]')
 case "$SOC_LOWER" in
     stm32f4*)
         PLATFORM_DIR="$FRAMEWORK_DIR/platform/stm32/stm32f4xx"
+        # CMSIS 设备宏：stm32f446 → STM32F446xx。F1、GD 以后在这里加自己的目录。
+        SOC_DEVICE="${SOC_UPPER}xx"
         ;;
     *)
         echo "error: 没有与 $SOC_LOWER 对应的平台目录" >&2
@@ -91,7 +93,6 @@ fi
 
 for required in \
     "$PLATFORM_DIR/platform.cmake" \
-    "$PLATFORM_DIR/system_init.c" \
     "$STARTUP_FILE" \
     "$LD_SCRIPT"
 do
@@ -112,7 +113,8 @@ if [ "$TOOLCHAIN" = "null" ]; then
           -DPROJECT_ID="$PROJECT_ID" \
           -DPLATFORM_DIR="$PLATFORM_DIR" \
           -DSTARTUP_FILE="$STARTUP_FILE" \
-          -DLD_SCRIPT="$LD_SCRIPT"
+          -DLD_SCRIPT="$LD_SCRIPT" \
+          -DSOC_DEVICE="$SOC_DEVICE"
 else
     cmake -S "$ROOT_DIR" -B "$BUILD_DIR" \
           -DCMAKE_BUILD_TYPE=Debug \
@@ -121,7 +123,8 @@ else
           -DPROJECT_ID="$PROJECT_ID" \
           -DPLATFORM_DIR="$PLATFORM_DIR" \
           -DSTARTUP_FILE="$STARTUP_FILE" \
-          -DLD_SCRIPT="$LD_SCRIPT"
+          -DLD_SCRIPT="$LD_SCRIPT" \
+          -DSOC_DEVICE="$SOC_DEVICE"
 fi
 cmake --build "$BUILD_DIR" --parallel
 
