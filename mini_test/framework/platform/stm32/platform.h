@@ -22,7 +22,7 @@
 //  * 
 //  */
 
-// #include "platform_config.h"
+#include "platform_config.h"
 
 // /**
 //  * @brief  重启系统

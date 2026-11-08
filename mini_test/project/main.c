@@ -20,7 +20,7 @@
 
 #include "platform.h"
 
-
+extern void boardInit(void);
 static void startTask(void *parameter)
 {
     (void)parameter;
@@ -31,7 +31,7 @@ static void startTask(void *parameter)
 
     // consoleInit();
 
-    // boardInit();
+    boardInit();
     // (void)sblConfigLoad();
     // gpsTimeInit();
     // pwmChirpInit();

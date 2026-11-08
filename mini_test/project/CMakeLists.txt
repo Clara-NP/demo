@@ -22,18 +22,24 @@ set(SIZE_CMD "${ARM_TOOLCHAIN_ROOT}/bin/arm-none-eabi-size")
 project(${PROJECT_ID} C ASM)
 
 include("${PLATFORM_DIR}/platform.cmake")
+include("${CMAKE_CURRENT_SOURCE_DIR}/../framework/driver/driver.cmake")
 
 set(ASM_SOURCES "${STARTUP_FILE}")
 
-# C 源文件。平台自己的源文件由 platform.cmake 给出。
+# C 源文件。平台源文件由 platform.cmake 给出，驱动源文件由 driver.cmake 给出。
 set(C_SOURCES
     main.c
+    board.c
     ${PLATFORM_C_SOURCES}
+    ${DRIVER_C_SOURCES}
 )
 
 # 头文件目录。
 set(INC_DIRS
+    ${CMAKE_CURRENT_SOURCE_DIR}
     ${PLATFORM_INC_DIRS}
+    ${DRIVER_INC_DIRS}
+    ${CMAKE_CURRENT_SOURCE_DIR}/../framework/platform
 )
 
 if(NOT EXISTS "${LD_SCRIPT}")
