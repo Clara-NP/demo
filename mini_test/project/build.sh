@@ -1,6 +1,6 @@
 #!/bin/sh
 # @file build.sh
-# @brief mini_test 交叉构建入口。源码、启动文件、链接脚本都在本目录。
+# @brief mini_test 交叉构建入口。芯片端口与默认链接脚本在 ../framework。
 #
 # @note 用法：./build.sh [clean]
 #       工具链可用 ARM_TOOLCHAIN_ROOT 覆盖；未设置时用 PATH 里的 arm-none-eabi-gcc。
@@ -33,9 +33,96 @@ if [ ! -x "$GCC" ]; then
     exit 1
 fi
 
-cmake -S "$ROOT_DIR" -B "$BUILD_DIR" \
-      -DCMAKE_BUILD_TYPE=Debug \
-      -DARM_TOOLCHAIN_ROOT="$ARM_TOOLCHAIN_ROOT"
+# 从 project.yaml 取出一个顶层或唯一的 key。注释行不参与匹配。
+yaml_get() {
+    awk -v key="$1" '
+        /^[ \t]*#/ { next }
+        $0 ~ "^[ \t]*" key ":[ \t]*" {
+            sub(/^[ \t]*[^:]+:[ \t]*/, "")
+            sub(/[ \t]*#.*/, "")
+            gsub(/[ \t]+$/, "")
+            print
+            exit
+        }
+    ' "$2"
+}
+
+require_yaml() {
+    if [ -z "$2" ]; then
+        echo "error: project.yaml 缺少 $1" >&2
+        exit 1
+    fi
+}
+
+YAML="$ROOT_DIR/project.yaml"
+PROJECT_ID=$(yaml_get id "$YAML")
+SOC=$(yaml_get soc "$YAML")
+TOOLCHAIN=$(yaml_get toolchain "$YAML")
+LINKER_SCRIPT=$(yaml_get linker_script "$YAML")
+FW_PATH=$(yaml_get path "$YAML")
+require_yaml id "$PROJECT_ID"
+require_yaml soc "$SOC"
+require_yaml toolchain "$TOOLCHAIN"
+require_yaml linker_script "$LINKER_SCRIPT"
+require_yaml path "$FW_PATH"
+
+MINI_ROOT=$(cd "$ROOT_DIR/.." && pwd)
+REPO_ROOT=$(cd "$MINI_ROOT/.." && pwd)
+FRAMEWORK_DIR="$REPO_ROOT/$FW_PATH"
+SOC_LOWER=$(printf '%s' "$SOC" | tr '[:upper:]' '[:lower:]')
+SOC_UPPER=$(printf '%s' "$SOC" | tr '[:lower:]' '[:upper:]')
+
+case "$SOC_LOWER" in
+    stm32f4*)
+        PLATFORM_DIR="$FRAMEWORK_DIR/platform/stm32/stm32f4xx"
+        ;;
+    *)
+        echo "error: 没有与 $SOC_LOWER 对应的平台目录" >&2
+        exit 1
+        ;;
+esac
+
+STARTUP_FILE="$FRAMEWORK_DIR/platform/startup/startup_${SOC_LOWER}xx.s"
+if [ "$LINKER_SCRIPT" = "null" ]; then
+    LD_SCRIPT="$FRAMEWORK_DIR/platform/ld/${SOC_UPPER}XX_FLASH.ld"
+else
+    LD_SCRIPT="$ROOT_DIR/$LINKER_SCRIPT"
+fi
+
+for required in \
+    "$PLATFORM_DIR/platform.cmake" \
+    "$PLATFORM_DIR/system_init.c" \
+    "$STARTUP_FILE" \
+    "$LD_SCRIPT"
+do
+    if [ ! -f "$required" ]; then
+        echo "error: 找不到 $required" >&2
+        exit 1
+    fi
+done
+
+echo "soc: $SOC_LOWER"
+echo "platform: $PLATFORM_DIR"
+echo "linker script: $LD_SCRIPT"
+
+if [ "$TOOLCHAIN" = "null" ]; then
+    cmake -S "$ROOT_DIR" -B "$BUILD_DIR" \
+          -DCMAKE_BUILD_TYPE=Debug \
+          -DARM_TOOLCHAIN_ROOT="$ARM_TOOLCHAIN_ROOT" \
+          -DPROJECT_ID="$PROJECT_ID" \
+          -DPLATFORM_DIR="$PLATFORM_DIR" \
+          -DSTARTUP_FILE="$STARTUP_FILE" \
+          -DLD_SCRIPT="$LD_SCRIPT"
+else
+    cmake -S "$ROOT_DIR" -B "$BUILD_DIR" \
+          -DCMAKE_BUILD_TYPE=Debug \
+          -DARM_TOOLCHAIN_ROOT="$ARM_TOOLCHAIN_ROOT" \
+          -DCMAKE_TOOLCHAIN_FILE="$REPO_ROOT/$TOOLCHAIN" \
+          -DPROJECT_ID="$PROJECT_ID" \
+          -DPLATFORM_DIR="$PLATFORM_DIR" \
+          -DSTARTUP_FILE="$STARTUP_FILE" \
+          -DLD_SCRIPT="$LD_SCRIPT"
+fi
 cmake --build "$BUILD_DIR" --parallel
 
 echo "artifacts:"

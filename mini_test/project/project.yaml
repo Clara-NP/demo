@@ -1,0 +1,43 @@
+# =============================================================================
+# project.yaml —— 工程的机器可读单一事实来源（模板）
+# -----------------------------------------------------------------------------
+# 复制 project_demo 到 projects/<id>/ 后，先把 id/name/soc/presets 改成本工程的。
+#
+# 只放"从代码推不出来、但要机器读"的元信息。以下内容**不放**在这里：
+#   - 引脚 / 器件地址 / 波特率  → src/system/board.c（描述符表）
+#   - 属性 ID                   → src/sacp/local_attributes.h
+#   - 源文件清单                 → CMakeLists.txt
+#   - 版本号                     → version.h / CHANGELOG.md
+# =============================================================================
+
+# 必填：必须与目录名一致（projects/<id>/）
+# id是工程的机器标识，会传递给project
+# name是给人看的名称，后续没有使用
+id: mini_test
+name: mini_test
+
+# 具体芯片。启动文件 startup_<soc>xx.s，默认链接脚本 <SOC>XX_FLASH.ld。
+# STM32F4 的平台代码不按型号拆，共用 platform/stm32/stm32f4xx。
+soc: stm32f446
+
+# 工具链文件（相对仓库根）；host 构建填 null
+# env/toolchains 尚未建立，null 时由 CMakeLists 使用 arm-none-eabi
+toolchain: null
+
+# 链接脚本（相对本工程目录）。null 时按 soc 在 platform/ld 中选择。
+linker_script: null
+
+# CMakePresets.json 里的 preset 名；未建 presets 时保持 null
+presets:
+  host: null
+  board: null
+
+# 测试期框架在本目录旁的 mini_test/framework，不使用仓库根 framework。
+# 平台实现在 framework/platform/<系列>/<系列>xx/，不另设 port 目录。
+framework:
+  path: mini_test/framework
+
+# 可选：仅在"不同工程需要不同框架版本"时才启用，见 docs/design/platform-plan.md §1.7
+# deps:
+#   - fw://crc16@v1.2.0
+deps: []

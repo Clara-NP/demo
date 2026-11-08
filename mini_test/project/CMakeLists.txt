@@ -1,48 +1,50 @@
-# mini_test：自包含的 STM32F446 闪灯。不引用本目录以外的源码或头文件。
+# mini_test：芯片与路径由 build.sh 从 project.yaml 解析后传入。
 
 cmake_minimum_required(VERSION 3.16)
 
-# 工程名。elf、bin、map 都使用这个名字。
-set(PROJECT_NAME mini_test)
+if(NOT PROJECT_ID OR NOT PLATFORM_DIR OR NOT STARTUP_FILE OR NOT LD_SCRIPT)
+    message(FATAL_ERROR "缺少 PROJECT_ID、PLATFORM_DIR、STARTUP_FILE 或 LD_SCRIPT，请用 ./build.sh 构建")
+endif()
 
-# 编译工具链。必须位于 project() 之前，CMake 才会使用这里的交叉编译器。
+# 编译工具链。必须位于 project() 之前。
+# toolchain 不是 null 时，build.sh 传入 CMAKE_TOOLCHAIN_FILE，这里不再设置编译器。
 set(ARM_TOOLCHAIN_ROOT "/usr" CACHE PATH "arm-none-eabi 工具链根目录，其 bin/ 下有 gcc 与 objcopy")
-set(CMAKE_SYSTEM_NAME Generic)
-set(CMAKE_SYSTEM_PROCESSOR arm)
-set(CMAKE_C_COMPILER "${ARM_TOOLCHAIN_ROOT}/bin/arm-none-eabi-gcc")
-set(CMAKE_ASM_COMPILER "${ARM_TOOLCHAIN_ROOT}/bin/arm-none-eabi-gcc")
-set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
+if(NOT CMAKE_TOOLCHAIN_FILE)
+    set(CMAKE_SYSTEM_NAME Generic)
+    set(CMAKE_SYSTEM_PROCESSOR arm)
+    set(CMAKE_C_COMPILER "${ARM_TOOLCHAIN_ROOT}/bin/arm-none-eabi-gcc")
+    set(CMAKE_ASM_COMPILER "${ARM_TOOLCHAIN_ROOT}/bin/arm-none-eabi-gcc")
+    set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
+endif()
 set(OBJCOPY_CMD "${ARM_TOOLCHAIN_ROOT}/bin/arm-none-eabi-objcopy")
 set(SIZE_CMD "${ARM_TOOLCHAIN_ROOT}/bin/arm-none-eabi-size")
 
-project(${PROJECT_NAME} C ASM)
+project(${PROJECT_ID} C ASM)
 
-# C 源文件。
+include("${PLATFORM_DIR}/platform.cmake")
+
+set(ASM_SOURCES "${STARTUP_FILE}")
+
+# C 源文件。平台自己的源文件由 platform.cmake 给出。
 set(C_SOURCES
     main.c
+    ${PLATFORM_C_SOURCES}
 )
 
-# 头文件目录。当前没有工程头文件；增加目录时追加到此列表。
+# 头文件目录。
 set(INC_DIRS
+    ${PLATFORM_INC_DIRS}
 )
 
-# 汇编源文件（.s）。
-set(ASM_SOURCES
-    ../framework/startup.s
-)
-
-# 链接脚本（.ld）。
-set(LD_SCRIPT ${CMAKE_CURRENT_SOURCE_DIR}/STM32F446XX_FLASH.ld)
+if(NOT EXISTS "${LD_SCRIPT}")
+    message(FATAL_ERROR "链接脚本不存在: ${LD_SCRIPT}")
+endif()
 
 # 编译宏（-D）。当前没有；需要时写成 NAME 或 NAME=value。
 set(COMPILE_DEFS
 )
 
-# 编译参数。CPU_OPTS 同时交给链接，保证编译和链接使用同一颗核。
-set(CPU_OPTS
-    -mcpu=cortex-m4
-    -mthumb
-)
+# 编译参数。CPU 参数来自平台，编译和链接使用同一组。
 set(WARN_OPTS
     -Wall
     -Wextra
@@ -52,7 +54,7 @@ set(WARN_OPTS
     -Wundef
 )
 set(COMPILE_OPTS
-    ${CPU_OPTS}
+    ${PLATFORM_CPU_OPTS}
     ${WARN_OPTS}
     -ffunction-sections
     -fdata-sections
@@ -61,7 +63,7 @@ set(COMPILE_OPTS
 
 # 链接参数。
 set(LINK_OPTS
-    ${CPU_OPTS}
+    ${PLATFORM_CPU_OPTS}
     -T${LD_SCRIPT}
     -nostdlib
     -Wl,--gc-sections
@@ -69,13 +71,14 @@ set(LINK_OPTS
     -Wl,-Map=${PROJECT_NAME}.map
 )
 
+message(STATUS "linker script: ${LD_SCRIPT}")
+
 # 生成目标。这里只引用上面的列表。
 add_executable(${PROJECT_NAME}
     ${C_SOURCES}
     ${ASM_SOURCES}
 )
 
-# 空列表不能传给 target_*，否则 CMake 会因缺少参数报错。
 if(INC_DIRS)
     target_include_directories(${PROJECT_NAME} PRIVATE ${INC_DIRS})
 endif()
